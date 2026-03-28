@@ -44,31 +44,33 @@ export default async function PerfilPage() {
             marginBottom: '1.5rem',
           }}>
             {/* Foto de portada / banner */}
-            <div style={{
-              width: '100%',
-              aspectRatio: '3 / 1',
-              background: 'linear-gradient(135deg, var(--vh-accent) 0%, var(--vh-accent-2) 100%)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}>
-              {profile?.avatar_url && (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.display_name}
-                  style={{
-                    width: '100%', height: '100%',
-                    objectFit: 'cover', objectPosition: 'center top',
-                    display: 'block',
-                  }}
-                />
-              )}
-              {/* Degradado inferior para legibilidad */}
-              <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                height: '60%',
-                background: 'linear-gradient(to top, rgba(0,0,0,0.55), transparent)',
-              }} />
-            </div>
+<div style={{
+  width: '100%',
+  minHeight: '120px',
+  background: 'linear-gradient(135deg, var(--vh-accent) 0%, var(--vh-accent-2) 100%)',
+  position: 'relative',
+  overflow: 'hidden',
+}}>
+  {profile?.avatar_url && (
+    <img
+      src={profile.avatar_url}
+      alt={profile.display_name}
+      style={{
+        width: '100%',
+        height: 'auto',
+        display: 'block',
+        maxHeight: '480px',
+        objectFit: 'cover',
+      }}
+    />
+  )}
+  {/* Degradado inferior para legibilidad */}
+  <div style={{
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    height: '80px',
+    background: 'linear-gradient(to top, var(--vh-bg-card), transparent)',
+  }} />
+</div>
 
             {/* Info */}
             <div style={{ padding: '1.5rem 1.75rem 1.75rem' }}>
