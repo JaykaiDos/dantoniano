@@ -505,3 +505,10 @@ body::before {
   background: var(--vh-accent-soft);
   color: var(--vh-accent) !important;
 }
+
+/* ── Social card hover ── */
+.social-card:hover {
+  transform:    translateY(-3px);
+  box-shadow:   var(--vh-shadow-md);
+  filter:       brightness(1.05);
+}

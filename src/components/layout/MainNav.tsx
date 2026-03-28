@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: '/',            label: 'Inicio',      icon: '🏠' },
   { href: '/temporadas',  label: 'Temporadas',  icon: '📅' },
   { href: '/buscar',      label: 'Buscar',      icon: '🔍' },
+    { href: '/perfil',     label: 'Perfil',     icon: '👤' },
 ] as const;
 
 export function MainNav() {

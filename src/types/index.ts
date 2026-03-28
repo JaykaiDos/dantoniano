@@ -51,10 +51,15 @@ export type Reaction = {
 export type PersonalStatus = Anime['personal_status'];
 
 export type Profile = {
-  id: string;
-  display_name: string;
-  avatar_url?: string;
-  bio?: string;
+  id:               string;
+  display_name:     string;
+  avatar_url?:      string;
+  bio?:             string;
   youtube_channel?: string;
-  twitter?: string;
+  twitter?:         string;
+  kick_channel?:    string;
+  instagram?:       string;
+  discord?:         string;
+  twitch?:          string;
+  created_at:       string;
 };

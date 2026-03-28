@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/admin/temporadas', label: 'Temporadas',  icon: '📅' },
   { href: '/admin/animes',     label: 'Animes',      icon: '🎌' },
   { href: '/admin/reacciones', label: 'Reacciones',  icon: '▶️' },
+  { href: '/admin/perfil',    label: 'Mi Perfil',  icon: '👤' },
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
