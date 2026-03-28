@@ -95,9 +95,8 @@ export function ReactionForm({ reaction, animes }: Props) {
 
       {/* ── Uploader automático ── */}
       <VideoUploader
-        onSuccess={({ streamtapeUrl, doodstreamUrl }) => {
+        onSuccess={({ streamtapeUrl}) => {
           if (streamtapeUrl) setSourceStreamtape(streamtapeUrl);
-          if (doodstreamUrl) setSourceDoodstream(doodstreamUrl);
         }}
       />
 

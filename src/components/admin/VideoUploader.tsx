@@ -1,69 +1,55 @@
-/**
- * VideoUploader — sube un archivo de video directo a Streamtape y/o Doodstream.
- * Direct upload: el archivo va del browser a la plataforma, sin pasar por Vercel.
- * Llama onSuccess con los links obtenidos al terminar.
- */
 'use client';
 
 import { useState, useRef } from 'react';
 
 interface UploadResult {
-  streamtapeUrl?: string;
-  doodstreamUrl?: string;
+  streamtapeUrl: string;
 }
 
 interface Props {
   onSuccess: (result: UploadResult) => void;
 }
 
-interface PlatformStatus {
-  state:    'idle' | 'uploading' | 'done' | 'error';
-  progress: number;
-  url?:     string;
-  error?:   string;
-}
+type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
 export function VideoUploader({ onSuccess }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [file,        setFile]        = useState<File | null>(null);
-  const [streamtape,  setStreamtape]  = useState<PlatformStatus>({ state: 'idle', progress: 0 });
-  const [doodstream,  setDoodstream]  = useState<PlatformStatus>({ state: 'idle', progress: 0 });
-  const [uploading,   setUploading]   = useState(false);
 
-  const isActive = uploading || streamtape.state === 'done' || doodstream.state === 'done';
+  const [file,     setFile]     = useState<File | null>(null);
+  const [state,    setState]    = useState<UploadState>('idle');
+  const [progress, setProgress] = useState(0);
+  const [url,      setUrl]      = useState('');
+  const [error,    setError]    = useState('');
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
-    // Resetear estados
-    setStreamtape({ state: 'idle', progress: 0 });
-    setDoodstream({ state: 'idle', progress: 0 });
+    setState('idle');
+    setProgress(0);
+    setUrl('');
+    setError('');
   }
 
-  /**
-   * Sube el archivo a una plataforma usando XMLHttpRequest para tracking de progreso.
-   * Devuelve la URL del video subido.
-   */
-  async function uploadToPlatform(
-    platform: 'streamtape' | 'doodstream',
-    file: File,
-    setStatus: React.Dispatch<React.SetStateAction<PlatformStatus>>
-  ): Promise<string | null> {
-    setStatus({ state: 'uploading', progress: 0 });
+  async function handleUpload() {
+    if (!file) return;
+    setState('uploading');
+    setProgress(0);
+    setError('');
 
     try {
-      // Paso 1: obtener URL de subida desde nuestro servidor
-      const tokenRes = await fetch(`/api/upload/${platform}`);
+      // Paso 1: obtener URL de subida de Streamtape
+      const tokenRes = await fetch('/api/upload/streamtape');
       if (!tokenRes.ok) {
-        const { error } = await tokenRes.json();
-        setStatus({ state: 'error', progress: 0, error });
-        return null;
+        const { error: msg } = await tokenRes.json();
+        setState('error');
+        setError(msg ?? 'Error al obtener URL de subida');
+        return;
       }
       const { uploadUrl } = await tokenRes.json();
 
-      // Paso 2: subir directo a la plataforma con progreso
-      return await new Promise((resolve) => {
+      // Paso 2: subir directo a Streamtape con progreso real
+      await new Promise<void>((resolve, reject) => {
         const formData = new FormData();
         formData.append('file', file, file.name);
 
@@ -71,113 +57,74 @@ export function VideoUploader({ onSuccess }: Props) {
 
         xhr.upload.addEventListener('progress', (e) => {
           if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 100);
-            setStatus({ state: 'uploading', progress: pct });
+            setProgress(Math.round((e.loaded / e.total) * 100));
           }
         });
 
         xhr.addEventListener('load', () => {
           try {
             const response = JSON.parse(xhr.responseText);
-
-            if (platform === 'streamtape') {
-              // Streamtape devuelve el file ID — construir URL
-              const fileId = response?.result?.id ?? response?.result?.url;
-              if (fileId) {
-                const url = fileId.startsWith('http')
-                  ? fileId
-                  : `https://streamtape.com/v/${fileId}`;
-                setStatus({ state: 'done', progress: 100, url });
-                resolve(url);
-              } else {
-                setStatus({ state: 'error', progress: 0, error: 'No se obtuvo el link' });
-                resolve(null);
-              }
+            const fileId   = response?.result?.id ?? response?.result?.url;
+            if (fileId) {
+              const finalUrl = fileId.startsWith('http')
+                ? fileId
+                : `https://streamtape.com/v/${fileId}`;
+              setUrl(finalUrl);
+              setProgress(100);
+              setState('done');
+              onSuccess({ streamtapeUrl: finalUrl });
+              resolve();
             } else {
-              // Doodstream devuelve filecode
-              const filecode = response?.result?.filecode ?? response?.filecode;
-              if (filecode) {
-                const url = `https://doodstream.com/d/${filecode}`;
-                setStatus({ state: 'done', progress: 100, url });
-                resolve(url);
-              } else {
-                setStatus({ state: 'error', progress: 0, error: 'No se obtuvo el link' });
-                resolve(null);
-              }
+              reject(new Error('No se obtuvo el link de Streamtape'));
             }
           } catch {
-            setStatus({ state: 'error', progress: 0, error: 'Respuesta inválida' });
-            resolve(null);
+            reject(new Error('Respuesta inválida de Streamtape'));
           }
         });
 
-        xhr.addEventListener('error', () => {
-          setStatus({ state: 'error', progress: 0, error: 'Error de conexión' });
-          resolve(null);
-        });
+        xhr.addEventListener('error', () => reject(new Error('Error de conexión')));
 
         xhr.open('POST', uploadUrl);
         xhr.send(formData);
       });
 
-    } catch (err) {
-      setStatus({ state: 'error', progress: 0, error: 'Error inesperado' });
-      return null;
-    }
-  }
-
-  async function handleUpload() {
-    if (!file) return;
-    setUploading(true);
-
-    // Subir a ambas plataformas en paralelo
-    const [stUrl, ddUrl] = await Promise.all([
-      uploadToPlatform('streamtape', file, setStreamtape),
-      uploadToPlatform('doodstream', file, setDoodstream),
-    ]);
-
-    setUploading(false);
-
-    // Llamar onSuccess con los links obtenidos
-    if (stUrl || ddUrl) {
-      onSuccess({
-        streamtapeUrl: stUrl  ?? undefined,
-        doodstreamUrl: ddUrl  ?? undefined,
-      });
+    } catch (err: any) {
+      setState('error');
+      setError(err?.message ?? 'Error inesperado');
     }
   }
 
   return (
     <div style={{
-      padding:      '1.25rem',
-      background:   'var(--vh-bg-elevated)',
-      border:       '1.5px solid var(--vh-border)',
-      borderRadius: 'var(--vh-radius-lg)',
-      display:      'flex',
-      flexDirection:'column',
-      gap:          '1rem',
+      padding:       '1.25rem',
+      background:    'var(--vh-bg-elevated)',
+      border:        '1.5px solid var(--vh-border)',
+      borderRadius:  'var(--vh-radius-lg)',
+      display:       'flex',
+      flexDirection: 'column',
+      gap:           '1rem',
     }}>
       <h3 style={{
         fontSize: '0.85rem', fontWeight: 700,
         color: 'var(--vh-text-muted)',
         textTransform: 'uppercase', letterSpacing: '0.06em',
       }}>
-        📤 Subir video automáticamente
+        📤 Subir video a Streamtape
       </h3>
 
       {/* Selector de archivo */}
-      {!isActive && (
+      {state !== 'uploading' && state !== 'done' && (
         <div
           onClick={() => fileRef.current?.click()}
           style={{
-            border:        '2px dashed var(--vh-border)',
-            borderRadius:  'var(--vh-radius-md)',
-            padding:       '2rem',
-            textAlign:     'center',
-            cursor:        'pointer',
-            transition:    'all var(--vh-transition)',
-            background:    file ? 'var(--vh-accent-soft)' : 'transparent',
-            borderColor:   file ? 'var(--vh-accent)' : 'var(--vh-border)',
+            border:       '2px dashed var(--vh-border)',
+            borderRadius: 'var(--vh-radius-md)',
+            padding:      '2rem',
+            textAlign:    'center',
+            cursor:       'pointer',
+            background:   file ? 'var(--vh-accent-soft)' : 'transparent',
+            borderColor:  file ? 'var(--vh-accent)' : 'var(--vh-border)',
+            transition:   'all var(--vh-transition)',
           }}
         >
           <input
@@ -190,7 +137,11 @@ export function VideoUploader({ onSuccess }: Props) {
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
             {file ? '🎬' : '📁'}
           </div>
-          <div style={{ fontSize: '0.88rem', color: file ? 'var(--vh-accent)' : 'var(--vh-text-muted)', fontWeight: file ? 700 : 400 }}>
+          <div style={{
+            fontSize:   '0.88rem',
+            color:      file ? 'var(--vh-accent)' : 'var(--vh-text-muted)',
+            fontWeight: file ? 700 : 400,
+          }}>
             {file ? file.name : 'Hacé click para seleccionar el archivo de video'}
           </div>
           {file && (
@@ -201,27 +152,54 @@ export function VideoUploader({ onSuccess }: Props) {
         </div>
       )}
 
-      {/* Estado de cada plataforma */}
-      {(streamtape.state !== 'idle' || doodstream.state !== 'idle') && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <PlatformProgress label="📼 Streamtape" status={streamtape} />
-          <PlatformProgress label="🎞 Doodstream" status={doodstream} />
+      {/* Barra de progreso */}
+      {state === 'uploading' && (
+        <div>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between',
+            marginBottom: '0.4rem',
+            fontSize: '0.82rem',
+          }}>
+            <span style={{ color: 'var(--vh-text-secondary)', fontWeight: 600 }}>
+              📼 Subiendo a Streamtape...
+            </span>
+            <span style={{ color: 'var(--vh-accent)', fontWeight: 700 }}>
+              {progress}%
+            </span>
+          </div>
+          <div style={{
+            height: '8px', borderRadius: '999px',
+            background: 'var(--vh-bg-card)', overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%', width: `${progress}%`,
+              background: 'var(--vh-accent)',
+              borderRadius: '999px',
+              transition: 'width 0.3s ease',
+            }} />
+          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--vh-text-muted)', marginTop: '0.4rem' }}>
+            {file && `${(file.size / 1024 / 1024).toFixed(0)} MB · No cerrés esta pestaña`}
+          </div>
         </div>
       )}
 
-      {/* Botón de subida */}
-      {file && !isActive && (
-        <button
-          onClick={handleUpload}
-          className="vh-btn vh-btn--primary"
-          style={{ width: '100%' }}
-        >
-          ⬆ Subir a Streamtape y Doodstream
-        </button>
+      {/* Error */}
+      {state === 'error' && (
+        <div style={{
+          padding:      '0.75rem 1rem',
+          background:   'var(--vh-danger-bg)',
+          border:       '1px solid var(--vh-danger)',
+          borderRadius: 'var(--vh-radius-md)',
+          color:        'var(--vh-danger)',
+          fontSize:     '0.85rem',
+        }}>
+          ❌ {error}
+        </div>
       )}
 
-      {/* Resultado exitoso */}
-      {(streamtape.state === 'done' || doodstream.state === 'done') && !uploading && (
+      {/* Éxito */}
+      {state === 'done' && (
         <div style={{
           padding:      '0.875rem 1rem',
           background:   'rgba(34,197,94,0.1)',
@@ -231,56 +209,41 @@ export function VideoUploader({ onSuccess }: Props) {
           color:        '#22c55e',
           fontWeight:   600,
         }}>
-          ✅ Links obtenidos y cargados automáticamente en el formulario
+          ✅ Subido correctamente — link cargado en Streamtape
+          <div style={{
+            fontSize:     '0.72rem',
+            fontWeight:   400,
+            color:        'var(--vh-text-muted)',
+            marginTop:    '0.25rem',
+            overflow:     'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace:   'nowrap',
+          }}>
+            {url}
+          </div>
         </div>
       )}
-    </div>
-  );
-}
 
-/** Barra de progreso por plataforma */
-function PlatformProgress({ label, status }: { label: string; status: PlatformStatus }) {
-  const colors = {
-    idle:      'var(--vh-border)',
-    uploading: 'var(--vh-accent)',
-    done:      '#22c55e',
-    error:     'var(--vh-danger)',
-  };
-  const color = colors[status.state];
+      {/* Botón */}
+      {file && state !== 'uploading' && state !== 'done' && (
+        <button
+          onClick={handleUpload}
+          className="vh-btn vh-btn--primary"
+          style={{ width: '100%' }}
+        >
+          ⬆ Subir a Streamtape
+        </button>
+      )}
 
-  return (
-    <div>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: '0.35rem',
-      }}>
-        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--vh-text-secondary)' }}>
-          {label}
-        </span>
-        <span style={{ fontSize: '0.75rem', color }}>
-          {status.state === 'idle'      && '—'}
-          {status.state === 'uploading' && `${status.progress}%`}
-          {status.state === 'done'      && '✅ Listo'}
-          {status.state === 'error'     && `❌ ${status.error}`}
-        </span>
-      </div>
-      <div style={{
-        height: '6px', borderRadius: '999px',
-        background: 'var(--vh-bg-card)',
-        overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%',
-          width:  `${status.state === 'done' ? 100 : status.progress}%`,
-          background: color,
-          borderRadius: '999px',
-          transition: 'width 0.3s ease',
-        }} />
-      </div>
-      {status.url && (
-        <div style={{ fontSize: '0.7rem', color: 'var(--vh-text-muted)', marginTop: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {status.url}
-        </div>
+      {/* Subir otro */}
+      {state === 'done' && (
+        <button
+          onClick={() => { setFile(null); setState('idle'); setUrl(''); setProgress(0); }}
+          className="vh-btn vh-btn--ghost"
+          style={{ width: '100%', fontSize: '0.85rem' }}
+        >
+          Subir otro video
+        </button>
       )}
     </div>
   );
