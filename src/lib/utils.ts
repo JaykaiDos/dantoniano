@@ -54,3 +54,71 @@ export const STATUS_CONFIG = {
   completado: { label: 'Completado',  emoji: '✅', className: 'vh-badge--finished' },
   dropeado:   { label: 'Dropeado',    emoji: '❌', className: 'vh-badge--dropped'  },
 } as const;
+
+/**
+ * Convierte cualquier URL de video a su versión embeddable.
+ * Soporta YouTube, Google Drive, Okru, Streamtape y URLs genéricas.
+ */
+export function getEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+
+  // ── YouTube ──
+  const ytPatterns = [
+    /youtube\.com\/watch\?v=([^#&?]{11})/,
+    /youtu\.be\/([^#&?]{11})/,
+    /youtube\.com\/shorts\/([^#&?]{11})/,
+  ];
+  for (const pattern of ytPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0`;
+  }
+  // Ya es embed de YouTube
+  if (trimmed.includes('youtube.com/embed/')) return trimmed;
+
+  // ── Google Drive ──
+  const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+  if (trimmed.includes('drive.google.com') && trimmed.includes('/preview')) return trimmed;
+
+  // ── Okru (ok.ru) ──
+  const okruMatch = trimmed.match(/ok\.ru\/video\/(\d+)/);
+  if (okruMatch) return `https://ok.ru/videoembed/${okruMatch[1]}`;
+  if (trimmed.includes('ok.ru/videoembed/')) return trimmed;
+
+  // ── Streamtape ──
+  const stMatch = trimmed.match(/streamtape\.com\/v\/([^/]+)/);
+  if (stMatch) return `https://streamtape.com/e/${stMatch[1]}`;
+  if (trimmed.includes('streamtape.com/e/')) return trimmed;
+
+  // ── Doodstream ──
+  const doodMatch = trimmed.match(/dood(?:stream)?\.(?:com|watch|to)\/d\/([^/?]+)/);
+  if (doodMatch) return `https://doodstream.com/e/${doodMatch[1]}`;
+
+  // ── Mega (no embeddable nativamente — devuelve null) ──
+  if (trimmed.includes('mega.nz')) return null;
+
+  // ── Fallback: si ya parece una URL de embed, usarla directo ──
+  if (trimmed.startsWith('http') && (
+    trimmed.includes('/embed/') ||
+    trimmed.includes('/e/') ||
+    trimmed.includes('/player') ||
+    trimmed.includes('player.')
+  )) return trimmed;
+
+  return null;
+}
+
+/**
+ * Detecta el tipo de plataforma de una URL de video.
+ */
+export function getVideoProvider(url: string): string {
+  if (!url) return 'unknown';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
+  if (url.includes('drive.google.com'))  return 'google-drive';
+  if (url.includes('ok.ru'))             return 'okru';
+  if (url.includes('streamtape.com'))    return 'streamtape';
+  if (url.includes('doodstream.com') || url.includes('dood.')) return 'doodstream';
+  if (url.includes('mega.nz'))           return 'mega';
+  return 'other';
+}

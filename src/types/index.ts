@@ -35,17 +35,18 @@ export type Anime = {
 };
 
 export type Reaction = {
-  id: string;
-  anime_id: string;
-  anime?: Anime;
-  episode_number: number;
-  youtube_url: string;
-  youtube_id: string;       // extraído de la URL
-  thumbnail_url?: string;
-  title: string;
-  duration?: string;        // "18:34"
-  published_at?: string;
-  created_at: string;
+  id:              string;
+  anime_id:        string;
+  anime?:          Anime;
+  episode_number:  number;
+  // URL original que carga el admin (YouTube, Drive, Okru, etc.)
+  youtube_url:     string;
+  youtube_id:      string;
+  thumbnail_url?:  string;
+  title:           string;
+  duration?:       string;
+  published_at?:   string;
+  created_at:      string;
 };
 
 export type PersonalStatus = Anime['personal_status'];

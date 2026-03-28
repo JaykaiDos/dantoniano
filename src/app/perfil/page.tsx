@@ -108,7 +108,7 @@ export default async function PerfilPage() {
               marginBottom:  '1rem',
               letterSpacing: '-0.01em',
             }}>
-              Encontrame en 🌐
+              Redes 🌐
             </h2>
 
             {!hasSocials ? (

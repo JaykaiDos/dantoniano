@@ -11,9 +11,8 @@ export function ReactionCard({ reaction }: Props) {
   const thumb = reaction.thumbnail_url ?? getYoutubeThumbnail(reaction.youtube_id, 'hq');
 
   return (
-    <a href={reaction.youtube_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+    <a href={`/watch/${reaction.id}`} style={{ textDecoration: 'none' }}>
       <article className="vh-card vh-card--reaction">
-
         <div className="vh-card__cover-wrapper" style={{ position: 'relative' }}>
           <img
             src={thumb}
@@ -24,11 +23,9 @@ export function ReactionCard({ reaction }: Props) {
               (e.target as HTMLImageElement).src = getYoutubeThumbnail(reaction.youtube_id, 'mq');
             }}
           />
-
           <div className="vh-card__play-overlay">
             <span className="vh-card__play-icon">▶</span>
           </div>
-
           {reaction.episode_number != null && (
             <div style={{
               position: 'absolute', top: '0.5rem', left: '0.5rem', zIndex: 2,
@@ -39,7 +36,6 @@ export function ReactionCard({ reaction }: Props) {
               EP {reaction.episode_number}
             </div>
           )}
-
           {reaction.duration != null && (
             <div style={{
               position: 'absolute', bottom: '0.5rem', right: '0.5rem', zIndex: 2,
@@ -51,7 +47,6 @@ export function ReactionCard({ reaction }: Props) {
             </div>
           )}
         </div>
-
         <div className="vh-card__body">
           <h4 className="vh-card__title">{reaction.title}</h4>
           {reaction.published_at != null && (
@@ -62,7 +57,6 @@ export function ReactionCard({ reaction }: Props) {
             </span>
           )}
         </div>
-
       </article>
     </a>
   );

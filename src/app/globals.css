@@ -512,3 +512,14 @@ body::before {
   box-shadow:   var(--vh-shadow-md);
   filter:       brightness(1.05);
 }
+
+/* ── Watch page ── */
+.episode-item:hover {
+  background: var(--vh-accent-soft) !important;
+}
+
+@media (max-width: 768px) {
+  .watch-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
