@@ -11,7 +11,6 @@ import { clsx } from 'clsx';
 const NAV_LINKS = [
   { href: '/',            label: 'Inicio',      icon: '🏠' },
   { href: '/temporadas',  label: 'Temporadas',  icon: '📅' },
-  { href: '/biblioteca',  label: 'Biblioteca',  icon: '📚' },
   { href: '/buscar',      label: 'Buscar',      icon: '🔍' },
 ] as const;
 
