@@ -1,3 +1,5 @@
+'use client';
+
 import { getYoutubeThumbnail } from '@/lib/utils';
 import type { Reaction } from '@/types';
 
