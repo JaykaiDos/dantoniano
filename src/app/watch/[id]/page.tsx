@@ -97,9 +97,15 @@ export default async function WatchPage({ params }: Props) {
             <div>
               {/* Player */}
               <VideoPlayer
-                url={reaction.youtube_url}
-                title={reaction.title}
-              />
+          url={reaction.youtube_url}
+          title={reaction.title}
+          sourceOkru={reaction.source_okru}
+          sourceStreamtape={reaction.source_streamtape}
+          sourceDoodstream={reaction.source_doodstream}
+          sourceStreamwish={reaction.source_streamwish}
+          sourceFilemoon={reaction.source_filemoon}
+          sourceVoe={reaction.source_voe}
+            />
 
               {/* Info del episodio */}
               <div style={{

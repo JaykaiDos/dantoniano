@@ -73,7 +73,6 @@ export function getEmbedUrl(url: string): string | null {
     const match = trimmed.match(pattern);
     if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0`;
   }
-  // Ya es embed de YouTube
   if (trimmed.includes('youtube.com/embed/')) return trimmed;
 
   // ── Google Drive ──
@@ -81,44 +80,58 @@ export function getEmbedUrl(url: string): string | null {
   if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   if (trimmed.includes('drive.google.com') && trimmed.includes('/preview')) return trimmed;
 
-  // ── Okru (ok.ru) ──
+  // ── Okru ──
   const okruMatch = trimmed.match(/ok\.ru\/video\/(\d+)/);
   if (okruMatch) return `https://ok.ru/videoembed/${okruMatch[1]}`;
   if (trimmed.includes('ok.ru/videoembed/')) return trimmed;
 
   // ── Streamtape ──
-  const stMatch = trimmed.match(/streamtape\.com\/v\/([^/]+)/);
+  const stMatch = trimmed.match(/streamtape\.com\/v\/([^/?]+)/);
   if (stMatch) return `https://streamtape.com/e/${stMatch[1]}`;
   if (trimmed.includes('streamtape.com/e/')) return trimmed;
 
   // ── Doodstream ──
-  const doodMatch = trimmed.match(/dood(?:stream)?\.(?:com|watch|to)\/d\/([^/?]+)/);
+  const doodMatch = trimmed.match(/dood(?:stream)?\.(?:com|watch|to|re|li)\/d\/([^/?]+)/);
   if (doodMatch) return `https://doodstream.com/e/${doodMatch[1]}`;
+  if (trimmed.match(/dood.*\/e\//)) return trimmed;
 
-  // ── Mega (no embeddable nativamente — devuelve null) ──
+  // ── Streamwish ──
+  const swMatch = trimmed.match(/streamwish\.(?:com|to)\/(?:e\/)?([^/?]+)/);
+  if (swMatch) return `https://streamwish.com/e/${swMatch[1]}`;
+
+  // ── Filemoon ──
+  const fmMatch = trimmed.match(/filemoon\.(?:sx|to|cc)\/e\/([^/?]+)/);
+  if (fmMatch) return `https://filemoon.sx/e/${fmMatch[1]}`;
+  const fmMatch2 = trimmed.match(/filemoon\.(?:sx|to|cc)\/(?:d\/)?([^/?]+)/);
+  if (fmMatch2) return `https://filemoon.sx/e/${fmMatch2[1]}`;
+
+  // ── VOE ──
+  const voeMatch = trimmed.match(/voe\.sx\/(?:e\/)?([^/?]+)/);
+  if (voeMatch) return `https://voe.sx/e/${voeMatch[1]}`;
+
+  // ── Mega ──
   if (trimmed.includes('mega.nz')) return null;
 
-  // ── Fallback: si ya parece una URL de embed, usarla directo ──
+  // ── Fallback embed directo ──
   if (trimmed.startsWith('http') && (
     trimmed.includes('/embed/') ||
     trimmed.includes('/e/') ||
-    trimmed.includes('/player') ||
-    trimmed.includes('player.')
+    trimmed.includes('/player')
   )) return trimmed;
 
   return null;
 }
 
-/**
- * Detecta el tipo de plataforma de una URL de video.
- */
 export function getVideoProvider(url: string): string {
   if (!url) return 'unknown';
   if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
   if (url.includes('drive.google.com'))  return 'google-drive';
   if (url.includes('ok.ru'))             return 'okru';
   if (url.includes('streamtape.com'))    return 'streamtape';
-  if (url.includes('doodstream.com') || url.includes('dood.')) return 'doodstream';
+  if (url.includes('dood'))              return 'doodstream';
+  if (url.includes('streamwish'))        return 'streamwish';
+  if (url.includes('filemoon'))          return 'filemoon';
+  if (url.includes('voe.sx'))            return 'voe';
   if (url.includes('mega.nz'))           return 'mega';
   return 'other';
 }

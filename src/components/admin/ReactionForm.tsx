@@ -27,6 +27,12 @@ export function ReactionForm({ reaction, animes }: Props) {
   const [publishedAt,setPublishedAt]  = useState(
     reaction?.published_at ? reaction.published_at.slice(0, 10) : ''
   );
+  const [sourceOkru,       setSourceOkru]       = useState(reaction?.source_okru        ?? '');
+  const [sourceStreamtape, setSourceStreamtape] = useState(reaction?.source_streamtape  ?? '');
+  const [sourceDoodstream, setSourceDoodstream] = useState(reaction?.source_doodstream  ?? '');
+  const [sourceStreamwish, setSourceStreamwish] = useState(reaction?.source_streamwish  ?? '');
+  const [sourceFilemoon,   setSourceFilemoon]   = useState(reaction?.source_filemoon    ?? '');
+  const [sourceVoe,        setSourceVoe]         = useState(reaction?.source_voe         ?? '');
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
@@ -54,14 +60,20 @@ export function ReactionForm({ reaction, animes }: Props) {
     setError('');
 
     const payload = {
-  anime_id:       animeId,
-  youtube_url:    youtubeUrl,
-  youtube_id:     youtubeId || youtubeUrl, // fallback al URL completo
-  thumbnail_url:  youtubeId ? getYoutubeThumbnail(youtubeId, 'hq') : null,
-  title:          title || `Reacción EP ${episode || '?'}`,
-  episode_number: episode ? Number(episode) : null,
-  duration:       duration || null,
-  published_at:   publishedAt || null,
+  anime_id:           animeId,
+  youtube_url:        youtubeUrl,
+  youtube_id:         youtubeId || youtubeUrl,
+  thumbnail_url:      youtubeId ? getYoutubeThumbnail(youtubeId, 'hq') : null,
+  title:              title || `Reacción EP ${episode || '?'}`,
+  episode_number:     episode    ? Number(episode) : null,
+  duration:           duration   || null,
+  published_at:       publishedAt || null,
+  source_okru:        sourceOkru       || null,
+  source_streamtape:  sourceStreamtape || null,
+  source_doodstream:  sourceDoodstream || null,
+  source_streamwish:  sourceStreamwish || null,
+  source_filemoon:    sourceFilemoon   || null,
+  source_voe:         sourceVoe        || null,
 };
 
     const res = await fetch('/api/admin/reactions', {
@@ -163,6 +175,34 @@ export function ReactionForm({ reaction, animes }: Props) {
           <input type="date" value={publishedAt} onChange={e => setPublishedAt(e.target.value)} style={inputStyle} />
         </div>
       </div>
+
+{/* Fuentes alternativas */}
+<div style={{ padding: '1.25rem', background: 'var(--vh-bg-elevated)', border: '1.5px solid var(--vh-border)', borderRadius: 'var(--vh-radius-lg)' }}>
+  <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--vh-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '1rem' }}>
+    🎬 Reproductores alternativos <span style={{ fontWeight: 400, textTransform: 'none', fontSize: '0.78rem' }}>(opcional)</span>
+  </h3>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+    {[
+      { label: '🎬 Okru',        value: sourceOkru,        setter: setSourceOkru,        placeholder: 'https://ok.ru/video/123456'              },
+      { label: '📼 Streamtape',  value: sourceStreamtape,  setter: setSourceStreamtape,  placeholder: 'https://streamtape.com/v/ABC123'         },
+      { label: '🎞 Doodstream',  value: sourceDoodstream,  setter: setSourceDoodstream,  placeholder: 'https://doodstream.com/d/ABC123'         },
+      { label: '⭐ Streamwish',  value: sourceStreamwish,  setter: setSourceStreamwish,  placeholder: 'https://streamwish.com/e/ABC123'         },
+      { label: '🌙 Filemoon',    value: sourceFilemoon,    setter: setSourceFilemoon,    placeholder: 'https://filemoon.sx/e/ABC123'            },
+      { label: '🔺 VOE',         value: sourceVoe,          setter: setSourceVoe,          placeholder: 'https://voe.sx/e/ABC123'                 },
+    ].map(({ label, value, setter, placeholder }) => (
+      <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+        <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--vh-text-secondary)' }}>{label}</label>
+        <input
+          type="url"
+          value={value}
+          onChange={e => setter(e.target.value)}
+          style={inputStyle}
+          placeholder={placeholder}
+        />
+      </div>
+    ))}
+  </div>
+</div>
 
       <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
         <button type="submit" disabled={loading} className="vh-btn vh-btn--primary" style={{ flex: 1 }}>
