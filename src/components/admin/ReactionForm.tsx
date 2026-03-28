@@ -31,35 +31,38 @@ export function ReactionForm({ reaction, animes }: Props) {
   const [error,   setError]   = useState('');
 
   function handleUrlChange(url: string) {
-    setYoutubeUrl(url);
-    const id = getYoutubeId(url);
-    if (id) {
-      setYoutubeId(id);
-      // Auto-sugerir título si está vacío
-      if (!title) setTitle(`Reacción EP ${episode || '?'}`);
-    } else {
-      setYoutubeId('');
-    }
+  setYoutubeUrl(url);
+  
+  // Intentar extraer ID de YouTube para el thumbnail
+  const ytId = getYoutubeId(url);
+  if (ytId) {
+    setYoutubeId(ytId);
+  } else {
+    // Para otras plataformas, usar el URL como identificador
+    setYoutubeId('');
   }
+  
+  if (!title) setTitle(`Reacción EP ${episode || '?'}`);
+}
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!youtubeId) { setError('La URL de YouTube no es válida.'); return; }
+    if (!youtubeUrl) { setError('Ingresá una URL de video.'); return; }
     if (!animeId)   { setError('Seleccioná un anime.'); return; }
 
     setLoading(true);
     setError('');
 
     const payload = {
-      anime_id:       animeId,
-      youtube_url:    youtubeUrl,
-      youtube_id:     youtubeId,
-      thumbnail_url:  getYoutubeThumbnail(youtubeId, 'hq'),
-      title:          title || `Reacción EP ${episode || '?'}`,
-      episode_number: episode ? Number(episode) : null,
-      duration:       duration || null,
-      published_at:   publishedAt || null,
-    };
+  anime_id:       animeId,
+  youtube_url:    youtubeUrl,
+  youtube_id:     youtubeId || youtubeUrl, // fallback al URL completo
+  thumbnail_url:  youtubeId ? getYoutubeThumbnail(youtubeId, 'hq') : null,
+  title:          title || `Reacción EP ${episode || '?'}`,
+  episode_number: episode ? Number(episode) : null,
+  duration:       duration || null,
+  published_at:   publishedAt || null,
+};
 
     const res = await fetch('/api/admin/reactions', {
       method:  editing ? 'PUT' : 'POST',
@@ -87,7 +90,7 @@ export function ReactionForm({ reaction, animes }: Props) {
 
       {/* URL YouTube */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-        <label style={labelStyle}>URL de YouTube *</label>
+        <label style={labelStyle}>URL del video * <span style={{ color: 'var(--vh-text-muted)', fontWeight: 400 }}>(YouTube, Okru, Drive, Streamtape...)</span></label>
         <input
           type="url"
           value={youtubeUrl}
@@ -97,22 +100,37 @@ export function ReactionForm({ reaction, animes }: Props) {
           required
         />
         {/* Preview del thumbnail */}
-        {youtubeId && (
-          <div style={{ marginTop: '0.5rem', position: 'relative', display: 'inline-block' }}>
-            <img
-              src={getYoutubeThumbnail(youtubeId, 'hq')}
-              alt="thumbnail"
-              style={{ width: '100%', maxWidth: 320, borderRadius: 'var(--vh-radius-md)', border: '1.5px solid var(--vh-border)' }}
-            />
-            <span style={{
-              position: 'absolute', top: 6, left: 6,
-              background: 'var(--vh-accent)', color: '#fff',
-              fontSize: '0.7rem', fontWeight: 700,
-              padding: '0.2rem 0.5rem', borderRadius: 'var(--vh-radius-sm)',
-            }}>
-              ✅ ID: {youtubeId}
-            </span>
-          </div>
+        {youtubeUrl && (
+  <div style={{ marginTop: '0.5rem', position: 'relative', display: 'inline-block' }}>
+    {youtubeId ? (
+      <>
+        <img
+          src={getYoutubeThumbnail(youtubeId, 'hq')}
+          alt="thumbnail"
+          style={{ width: '100%', maxWidth: 320, borderRadius: 'var(--vh-radius-md)', border: '1.5px solid var(--vh-border)' }}
+        />
+        <span style={{
+          position: 'absolute', top: 6, left: 6,
+          background: 'var(--vh-accent)', color: '#fff',
+          fontSize: '0.7rem', fontWeight: 700,
+          padding: '0.2rem 0.5rem', borderRadius: 'var(--vh-radius-sm)',
+        }}>
+          ✅ YouTube detectado
+        </span>
+      </>
+    ) : (
+      <div style={{
+        padding: '0.6rem 1rem',
+        background: 'var(--vh-accent-2-soft)',
+        border: '1px solid var(--vh-accent-2)',
+        borderRadius: 'var(--vh-radius-md)',
+        fontSize: '0.8rem',
+        color: 'var(--vh-accent-2)',
+      }}>
+        ✅ URL cargada — se convertirá automáticamente al reproducir
+      </div>
+    )}
+  </div>
         )}
       </div>
 
