@@ -20,6 +20,9 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: 'Dantoniano — Reacciones de Anime',
   description: 'Todas las reacciones de anime organizadas por temporada.',
+  verification: {
+    google: 'riK_OvrC7Yc4MZnvBg1QVBMa_KG_AVhMUvU-4Jxtgyg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
