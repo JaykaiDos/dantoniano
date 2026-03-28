@@ -1,0 +1,166 @@
+/**
+ * Formulario de reacción.
+ * Al pegar una URL de YouTube, auto-detecta el ID y genera el thumbnail.
+ */
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getYoutubeId, getYoutubeThumbnail } from '@/lib/utils';
+import type { Reaction } from '@/types';
+
+interface Props {
+  reaction?: Reaction;
+  animes:    { id: string; title: string }[];
+}
+
+export function ReactionForm({ reaction, animes }: Props) {
+  const router  = useRouter();
+  const editing = !!reaction;
+
+  const [youtubeUrl, setYoutubeUrl]   = useState(reaction?.youtube_url    ?? '');
+  const [youtubeId,  setYoutubeId]    = useState(reaction?.youtube_id     ?? '');
+  const [title,      setTitle]        = useState(reaction?.title          ?? '');
+  const [animeId,    setAnimeId]      = useState(reaction?.anime_id       ?? '');
+  const [episode,    setEpisode]      = useState(reaction?.episode_number ?? '');
+  const [duration,   setDuration]     = useState(reaction?.duration       ?? '');
+  const [publishedAt,setPublishedAt]  = useState(
+    reaction?.published_at ? reaction.published_at.slice(0, 10) : ''
+  );
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  function handleUrlChange(url: string) {
+    setYoutubeUrl(url);
+    const id = getYoutubeId(url);
+    if (id) {
+      setYoutubeId(id);
+      // Auto-sugerir título si está vacío
+      if (!title) setTitle(`Reacción EP ${episode || '?'}`);
+    } else {
+      setYoutubeId('');
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!youtubeId) { setError('La URL de YouTube no es válida.'); return; }
+    if (!animeId)   { setError('Seleccioná un anime.'); return; }
+
+    setLoading(true);
+    setError('');
+
+    const payload = {
+      anime_id:       animeId,
+      youtube_url:    youtubeUrl,
+      youtube_id:     youtubeId,
+      thumbnail_url:  getYoutubeThumbnail(youtubeId, 'hq'),
+      title:          title || `Reacción EP ${episode || '?'}`,
+      episode_number: episode ? Number(episode) : null,
+      duration:       duration || null,
+      published_at:   publishedAt || null,
+    };
+
+    const res = await fetch('/api/admin/reactions', {
+      method:  editing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(editing ? { ...payload, id: reaction!.id } : payload),
+    });
+
+    setLoading(false);
+    if (!res.ok) {
+      const { error: msg } = await res.json();
+      setError(msg ?? 'Error al guardar');
+    } else {
+      router.push('/admin/reacciones');
+      router.refresh();
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {error && (
+        <div style={{ padding: '0.75rem 1rem', background: 'var(--vh-danger-bg)', border: '1px solid var(--vh-danger)', borderRadius: 'var(--vh-radius-md)', color: 'var(--vh-danger)', fontSize: '0.875rem' }}>
+          {error}
+        </div>
+      )}
+
+      {/* URL YouTube */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <label style={labelStyle}>URL de YouTube *</label>
+        <input
+          type="url"
+          value={youtubeUrl}
+          onChange={e => handleUrlChange(e.target.value)}
+          style={inputStyle}
+          placeholder="https://www.youtube.com/watch?v=..."
+          required
+        />
+        {/* Preview del thumbnail */}
+        {youtubeId && (
+          <div style={{ marginTop: '0.5rem', position: 'relative', display: 'inline-block' }}>
+            <img
+              src={getYoutubeThumbnail(youtubeId, 'hq')}
+              alt="thumbnail"
+              style={{ width: '100%', maxWidth: 320, borderRadius: 'var(--vh-radius-md)', border: '1.5px solid var(--vh-border)' }}
+            />
+            <span style={{
+              position: 'absolute', top: 6, left: 6,
+              background: 'var(--vh-accent)', color: '#fff',
+              fontSize: '0.7rem', fontWeight: 700,
+              padding: '0.2rem 0.5rem', borderRadius: 'var(--vh-radius-sm)',
+            }}>
+              ✅ ID: {youtubeId}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Anime */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <label style={labelStyle}>Anime *</label>
+        <select value={animeId} onChange={e => setAnimeId(e.target.value)} style={selectStyle} required>
+          <option value="">Seleccioná un anime...</option>
+          {animes.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+        </select>
+      </div>
+
+      {/* Título */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <label style={labelStyle}>Título de la reacción</label>
+        <input value={title} onChange={e => setTitle(e.target.value)} style={inputStyle} placeholder="Reacción EP 1 — Solo Leveling S2" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+          <label style={labelStyle}>Episodio</label>
+          <input type="number" value={episode} onChange={e => setEpisode(e.target.value as any)} style={inputStyle} min={0} placeholder="1" />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+          <label style={labelStyle}>Duración</label>
+          <input value={duration} onChange={e => setDuration(e.target.value)} style={inputStyle} placeholder="18:34" />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+          <label style={labelStyle}>Fecha de subida</label>
+          <input type="date" value={publishedAt} onChange={e => setPublishedAt(e.target.value)} style={inputStyle} />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem' }}>
+        <button type="submit" disabled={loading} className="vh-btn vh-btn--primary" style={{ flex: 1 }}>
+          {loading ? '⏳ Guardando...' : editing ? '💾 Guardar cambios' : '+ Cargar reacción'}
+        </button>
+        <button type="button" onClick={() => router.back()} className="vh-btn vh-btn--ghost">Cancelar</button>
+      </div>
+    </form>
+  );
+}
+
+const labelStyle: React.CSSProperties = { fontSize: '0.875rem', fontWeight: 600, color: 'var(--vh-text-secondary)' };
+const inputStyle: React.CSSProperties = {
+  padding: '0.65rem 1rem', borderRadius: 'var(--vh-radius-md)',
+  border: '1.5px solid var(--vh-border)', background: 'var(--vh-bg-elevated)',
+  color: 'var(--vh-text-primary)', fontFamily: 'inherit', fontSize: '0.9rem',
+  outline: 'none', width: '100%',
+};
+const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };

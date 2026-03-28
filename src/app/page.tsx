@@ -1,65 +1,138 @@
-import Image from "next/image";
+/**
+ * Home — hero + stats + temporada actual + últimas reacciones.
+ */
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { Header } from '@/components/layout/Header';
+import { MainNav } from '@/components/layout/MainNav';
+import { SeasonCard } from '@/components/ui/SeasonCard';
+import { ReactionCard } from '@/components/ui/ReactionCard';
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const [
+    { data: seasons },
+    { data: recentReactions },
+    { data: stats },
+  ] = await Promise.all([
+    supabase.from('seasons').select('*, anime_count:animes(count)')
+      .order('year', { ascending: false }).limit(4),
+    supabase.from('reactions').select('*, anime:animes(title, season_id)')
+      .order('created_at', { ascending: false }).limit(6),
+    supabase.from('animes').select('personal_status', { count: 'exact' }),
+  ]);
+
+  const seasonsNorm = (seasons ?? []).map(s => ({
+    ...s,
+    anime_count: (s.anime_count as any)?.[0]?.count ?? 0,
+  }));
+
+  const totalAnimes    = stats?.length ?? 0;
+  const totalReactions = recentReactions?.length ?? 0;
+  const completados    = stats?.filter(a => a.personal_status === 'completado').length ?? 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+    <>
+      <Header />
+      <MainNav />
+      <main>
+        <div className="vh-container vh-view">
+
+          {/* ── Hero ── */}
+          <section style={{
+            textAlign: 'center', padding: '3rem 1rem 3.5rem',
+            marginBottom: '1rem',
+          }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎌</div>
+            <h2 style={{
+              fontFamily: 'var(--font-playfair, Georgia, serif)',
+              fontSize: 'clamp(1.8rem, 5vw, 3rem)',
+              fontWeight: 700, color: 'var(--vh-text-primary)',
+              letterSpacing: '-0.02em', lineHeight: 1.15,
+              marginBottom: '1rem',
+            }}>
+              Las reacciones de{' '}
+              <span style={{
+                color: 'var(--vh-accent)',
+                textShadow: '0 0 28px rgba(192,98,122,0.4)',
+              }}>
+                Dantoniano
+              </span>
+            </h2>
+            <p style={{
+              color: 'var(--vh-text-secondary)', fontSize: '1rem',
+              maxWidth: '520px', margin: '0 auto 2rem', lineHeight: 1.6,
+            }}>
+              Todas mis reacciones de anime organizadas por temporada. 
+              Encontrá tus series favoritas y reviví los momentos épicos.
+            </p>
+            {/* Stats */}
+            <div style={{
+              display: 'flex', justifyContent: 'center', gap: '2rem',
+              flexWrap: 'wrap',
+            }}>
+              {[
+                { value: seasonsNorm.length, label: 'Temporadas' },
+                { value: totalAnimes,        label: 'Animes'     },
+                { value: completados,        label: 'Completados'},
+              ].map(({ value, label }) => (
+                <div key={label} style={{ textAlign: 'center' }}>
+                  <div style={{
+                    fontFamily: 'var(--font-playfair, Georgia, serif)',
+                    fontSize: '2rem', fontWeight: 700,
+                    color: 'var(--vh-accent)',
+                    lineHeight: 1,
+                  }}>
+                    {value}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--vh-text-muted)', marginTop: '0.25rem' }}>
+                    {label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ── Temporadas recientes ── */}
+          <section style={{ marginBottom: '3rem' }}>
+            <div className="vh-section-header">
+              <div>
+                <h3 className="vh-section-title">Temporadas 📅</h3>
+                <p className="vh-section-subtitle">Explorá por estación</p>
+              </div>
+              <Link href="/temporadas" className="vh-btn vh-btn--ghost" style={{ fontSize: '0.85rem' }}>
+                Ver todas →
+              </Link>
+            </div>
+            <div className="vh-cards-grid" style={{
+              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+            }}>
+              {seasonsNorm.map(s => <SeasonCard key={s.id} season={s} />)}
+            </div>
+          </section>
+
+          {/* ── Últimas reacciones ── */}
+          {recentReactions && recentReactions.length > 0 && (
+            <section>
+              <div className="vh-section-header">
+                <div>
+                  <h3 className="vh-section-title">Últimas reacciones ▶</h3>
+                  <p className="vh-section-subtitle">Lo más reciente del canal</p>
+                </div>
+              </div>
+              <div className="vh-cards-grid" style={{
+                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+              }}>
+                {recentReactions.map(r => (
+                  <ReactionCard key={r.id} reaction={r} />
+                ))}
+              </div>
+            </section>
+          )}
+
         </div>
       </main>
-    </div>
+    </>
   );
 }
