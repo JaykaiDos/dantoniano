@@ -56,15 +56,14 @@ export default async function HomePage() {
                 color: 'var(--vh-accent)',
                 textShadow: '0 0 28px rgba(192,98,122,0.4)',
               }}>
-                Dantoniano
+                xdantonioxd21
               </span>
             </h2>
             <p style={{
               color: 'var(--vh-text-secondary)', fontSize: '1rem',
               maxWidth: '520px', margin: '0 auto 2rem', lineHeight: 1.6,
             }}>
-              Todas mis reacciones de anime organizadas por temporada.
-              Encontrá tus series favoritas y reviví los momentos épicos.
+              Todas las reacciones de anime organizadas por temporada.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
               {[
