@@ -95,18 +95,27 @@ export function getEmbedUrl(url: string): string | null {
   if (doodMatch) return `https://doodstream.com/e/${doodMatch[1]}`;
   if (trimmed.match(/dood.*\/e\//)) return trimmed;
 
-  // ── Streamwish / SeekStreaming / SeekPlays ──
-  const swPatterns = [
-    /streamwish\.(?:com|to)\/(?:e\/|f\/)?([^/?]+)/,
-    /seekstreaming\.com\/(?:e\/|f\/)?([^/?]+)/,
-    /seekplays\.online\/#([^&?/]+)/,
-    /seekplays\.online\/(?:e\/|f\/)?([^/?#]+)/,
-  ];
-  for (const pattern of swPatterns) {
-    const match = trimmed.match(pattern);
-    if (match) return `https://seekstreaming.com/e/${match[1]}`;
+// ── Streamwish / SeekStreaming / SeekPlays ──
+const swPatterns = [
+  /streamwish\.(?:com|to)\/(?:e\/|f\/)?([^/?]+)/,
+  /seekstreaming\.com\/(?:e\/|f\/)?([^/?]+)/,
+  // Dominio personalizado con hash: dantoniano.seekplays.online/#pvvpy
+  /seekplays\.online\/#([^&?\s]+)/,
+  /seekplays\.online\/(?:e\/|f\/)?([^/?#\s]+)/,
+];
+for (const pattern of swPatterns) {
+  const match = trimmed.match(pattern);
+  if (match && match[1]) {
+    // Usar la URL original del dominio personalizado — SeekStreaming requiere su propio dominio
+    if (trimmed.includes('seekplays.online')) return trimmed;
+    return `https://seekstreaming.com/e/${match[1]}`;
   }
-  if (trimmed.includes('seekstreaming.com/e/') || trimmed.includes('streamwish.com/e/')) return trimmed;
+}
+if (
+  trimmed.includes('seekstreaming.com/e/') ||
+  trimmed.includes('streamwish.com/e/') ||
+  trimmed.includes('seekplays.online/#')
+) return trimmed;
 
   // ── Filemoon ──
   const fmMatch = trimmed.match(/filemoon\.(?:sx|to|cc)\/e\/([^/?]+)/);
