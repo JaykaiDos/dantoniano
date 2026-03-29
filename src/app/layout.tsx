@@ -2,7 +2,7 @@
  * Root Layout — aplica fuentes, ThemeProvider y estructura global.
  */
 import type { Metadata } from 'next';
-import { DM_Sans, Playfair_Display } from 'next/font/google';
+import { DM_Sans, Playfair_Display, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -14,6 +14,12 @@ const dmSans = DM_Sans({
 const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
+  display: 'swap',
+});
+
+const robotoMono = Roboto_Mono({
+  subsets: ['latin'],
+  variable: '--font-roboto-mono',
   display: 'swap',
 });
 
@@ -53,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }}
 />
       </head>
-      <body className={`${dmSans.variable} ${playfair.variable}`}>
+      <body className={`${dmSans.variable} ${playfair.variable} ${robotoMono.variable}`}>
         {children}
       </body>
     </html>

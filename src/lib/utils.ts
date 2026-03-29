@@ -57,7 +57,7 @@ export const STATUS_CONFIG = {
 
 /**
  * Convierte cualquier URL de video a su versión embeddable.
- * Soporta YouTube, Google Drive, Okru, Streamtape y URLs genéricas.
+ * Soporta YouTube, Google Drive, Okru, Streamtape, SeekStreaming y más.
  */
 export function getEmbedUrl(url: string): string | null {
   if (!url) return null;
@@ -95,9 +95,18 @@ export function getEmbedUrl(url: string): string | null {
   if (doodMatch) return `https://doodstream.com/e/${doodMatch[1]}`;
   if (trimmed.match(/dood.*\/e\//)) return trimmed;
 
-  // ── Streamwish ──
-  const swMatch = trimmed.match(/streamwish\.(?:com|to)\/(?:e\/)?([^/?]+)/);
-  if (swMatch) return `https://streamwish.com/e/${swMatch[1]}`;
+  // ── Streamwish / SeekStreaming / SeekPlays ──
+  const swPatterns = [
+    /streamwish\.(?:com|to)\/(?:e\/|f\/)?([^/?]+)/,
+    /seekstreaming\.com\/(?:e\/|f\/)?([^/?]+)/,
+    /seekplays\.online\/#([^&?/]+)/,
+    /seekplays\.online\/(?:e\/|f\/)?([^/?#]+)/,
+  ];
+  for (const pattern of swPatterns) {
+    const match = trimmed.match(pattern);
+    if (match) return `https://seekstreaming.com/e/${match[1]}`;
+  }
+  if (trimmed.includes('seekstreaming.com/e/') || trimmed.includes('streamwish.com/e/')) return trimmed;
 
   // ── Filemoon ──
   const fmMatch = trimmed.match(/filemoon\.(?:sx|to|cc)\/e\/([^/?]+)/);
@@ -116,7 +125,8 @@ export function getEmbedUrl(url: string): string | null {
   if (trimmed.startsWith('http') && (
     trimmed.includes('/embed/') ||
     trimmed.includes('/e/') ||
-    trimmed.includes('/player')
+    trimmed.includes('/player') ||
+    trimmed.includes('#')
   )) return trimmed;
 
   return null;
@@ -124,14 +134,15 @@ export function getEmbedUrl(url: string): string | null {
 
 export function getVideoProvider(url: string): string {
   if (!url) return 'unknown';
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'youtube';
-  if (url.includes('drive.google.com'))  return 'google-drive';
-  if (url.includes('ok.ru'))             return 'okru';
-  if (url.includes('streamtape.com'))    return 'streamtape';
-  if (url.includes('dood'))              return 'doodstream';
-  if (url.includes('streamwish'))        return 'streamwish';
-  if (url.includes('filemoon'))          return 'filemoon';
-  if (url.includes('voe.sx'))            return 'voe';
-  if (url.includes('mega.nz'))           return 'mega';
+  if (url.includes('youtube.com') || url.includes('youtu.be'))            return 'youtube';
+  if (url.includes('drive.google.com'))                                    return 'google-drive';
+  if (url.includes('ok.ru'))                                               return 'okru';
+  if (url.includes('streamtape.com'))                                      return 'streamtape';
+  if (url.includes('dood'))                                                return 'doodstream';
+  if (url.includes('streamwish') || url.includes('seekstreaming') ||
+      url.includes('seekplays'))                                           return 'streamwish';
+  if (url.includes('filemoon'))                                            return 'filemoon';
+  if (url.includes('voe.sx'))                                              return 'voe';
+  if (url.includes('mega.nz'))                                             return 'mega';
   return 'other';
 }
