@@ -3,6 +3,7 @@
  */
 import type { Metadata } from 'next';
 import { DM_Sans, Playfair_Display, Roboto_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -51,16 +52,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" suppressHydrationWarning>
       <head>
         {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
-        {/* Detección de tema sin flash — usando template para evitar warning de React */}
-<script
-  suppressHydrationWarning
-  dangerouslySetInnerHTML={{
-    __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
-  }}
-/>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className={`${dmSans.variable} ${playfair.variable} ${robotoMono.variable}`}>
         {children}
+        <Analytics /> {/* ← Vercel Analytics: registra visitas en producción */}
       </body>
     </html>
   );
