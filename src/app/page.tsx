@@ -18,7 +18,7 @@ export default async function HomePage() {
   ] = await Promise.all([
     supabase.from('seasons').select('*, anime_count:animes(count)')
       .order('year', { ascending: false }).limit(4),
-    supabase.from('reactions').select('*, anime:animes(title, season_id)')
+    supabase.from('reactions').select('*, anime:animes(title, cover_url, season_id)')
       .order('created_at', { ascending: false }).limit(6),
     supabase.from('animes').select('personal_status', { count: 'exact' }),
   ]);
@@ -28,9 +28,8 @@ export default async function HomePage() {
     anime_count: (s.anime_count as any)?.[0]?.count ?? 0,
   }));
 
-  const totalAnimes    = stats?.length ?? 0;
-  const totalReactions = recentReactions?.length ?? 0;
-  const completados    = stats?.filter(a => a.personal_status === 'completado').length ?? 0;
+  const totalAnimes = stats?.length ?? 0;
+  const completados = stats?.filter(a => a.personal_status === 'completado').length ?? 0;
 
   return (
     <>
@@ -64,14 +63,10 @@ export default async function HomePage() {
               color: 'var(--vh-text-secondary)', fontSize: '1rem',
               maxWidth: '520px', margin: '0 auto 2rem', lineHeight: 1.6,
             }}>
-              Todas mis reacciones de anime organizadas por temporada. 
+              Todas mis reacciones de anime organizadas por temporada.
               Encontrá tus series favoritas y reviví los momentos épicos.
             </p>
-            {/* Stats */}
-            <div style={{
-              display: 'flex', justifyContent: 'center', gap: '2rem',
-              flexWrap: 'wrap',
-            }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
               {[
                 { value: seasonsNorm.length, label: 'Temporadas' },
                 { value: totalAnimes,        label: 'Animes'     },
@@ -81,8 +76,7 @@ export default async function HomePage() {
                   <div style={{
                     fontFamily: 'var(--font-playfair, Georgia, serif)',
                     fontSize: '2rem', fontWeight: 700,
-                    color: 'var(--vh-accent)',
-                    lineHeight: 1,
+                    color: 'var(--vh-accent)', lineHeight: 1,
                   }}>
                     {value}
                   </div>
@@ -125,7 +119,13 @@ export default async function HomePage() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
               }}>
                 {recentReactions.map(r => (
-                  <ReactionCard key={r.id} reaction={r} />
+                  <ReactionCard
+                    key={r.id}
+                    reaction={{
+                      ...r,
+                      anime_cover: (r.anime as any)?.cover_url ?? undefined,
+                    }}
+                  />
                 ))}
               </div>
             </section>

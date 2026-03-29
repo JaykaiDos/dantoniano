@@ -217,7 +217,13 @@ export default async function SeasonPage({ params }: Props) {
                             gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
                           }}>
                             {animeReactions.map(r => (
-                              <ReactionCard key={r.id} reaction={r} />
+                          <ReactionCard
+                          key={r.id}
+                          reaction={{
+      ...r,
+      anime_cover: anime.cover_url ?? undefined,
+                            }}
+                          />
                             ))}
                           </div>
                         </>
