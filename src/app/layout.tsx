@@ -19,9 +19,24 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: 'Dantoniano — Reacciones de Anime',
-  description: 'Todas las reacciones de anime organizadas por temporada.',
-  verification: {
-    google: 'riK_OvrC7Yc4MZnvBg1QVBMa_KG_AVhMUvU-4Jxtgyg',
+  description: 'Las reacciones de Dantoniano. Todas mis reacciones de anime organizadas por temporada. Encontrá tus series favoritas y reviví los momentos épicos.',
+  applicationName: 'xdantonioxd21',
+  authors: [{ name: 'xdantonioxd21' }],
+  creator: 'xdantonioxd21',
+  publisher: 'xdantonioxd21',
+  openGraph: {
+    title:       'Dantoniano — Reacciones de Anime',
+    description: 'Todas mis reacciones de anime organizadas por temporada.',
+    siteName:    'xdantonioxd21',
+    url:         'https://dantoniano.vercel.app',
+    locale:      'es_AR',
+    type:        'website',
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Dantoniano — Reacciones de Anime',
+    description: 'Todas mis reacciones de anime organizadas por temporada.',
+    creator:     '@xdantonioxd21',
   },
 };
 
