@@ -39,12 +39,12 @@ export default async function HomePage() {
         <div className="vh-container vh-view">
 
           {/* ── Hero ── */}
-          <section style={{
+          <section className="vh-hero-section" style={{
             textAlign: 'center', padding: '3rem 1rem 3.5rem',
             marginBottom: '1rem',
           }}>
             <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎌</div>
-            <h2 style={{
+            <h2 className="vh-hero-title" style={{
               fontFamily: 'var(--font-playfair, Georgia, serif)',
               fontSize: 'clamp(1.8rem, 5vw, 3rem)',
               fontWeight: 700, color: 'var(--vh-text-primary)',
@@ -54,7 +54,7 @@ export default async function HomePage() {
               Las reacciones de{' '}
               <span style={{
                 color: 'var(--vh-accent)',
-                textShadow: '0 0 28px rgba(192,98,122,0.4)',
+                textShadow: '0 0 28px rgba(72,202,228,0.4)',
               }}>
                 xdantonioxd21
               </span>
@@ -65,14 +65,16 @@ export default async function HomePage() {
             }}>
               Todas las reacciones de anime organizadas por temporada.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+            <div className="vh-hero-stats" style={{
+              display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap',
+            }}>
               {[
                 { value: seasonsNorm.length, label: 'Temporadas' },
                 { value: totalAnimes,        label: 'Animes'     },
                 { value: completados,        label: 'Completados'},
               ].map(({ value, label }) => (
                 <div key={label} style={{ textAlign: 'center' }}>
-                  <div style={{
+                  <div className="vh-hero-stat-value" style={{
                     fontFamily: 'var(--font-playfair, Georgia, serif)',
                     fontSize: '2rem', fontWeight: 700,
                     color: 'var(--vh-accent)', lineHeight: 1,
