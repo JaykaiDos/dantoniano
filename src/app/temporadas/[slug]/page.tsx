@@ -6,7 +6,6 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { Header } from '@/components/layout/Header';
 import { MainNav } from '@/components/layout/MainNav';
-import { AnimeCard } from '@/components/ui/AnimeCard';
 import { ReactionCard } from '@/components/ui/ReactionCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -18,15 +17,49 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  return { title: `${slug} — Dantoniano` };
+  const { slug }  = await params;
+  const supabase  = await createClient();
+
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id, name')
+    .eq('slug', slug)
+    .single();
+
+  const title = season ? `${season.name} — Dantoniano` : 'Dantoniano';
+
+  // Primer anime con cover de esta temporada para og:image
+  const { data: firstAnime } = season
+    ? await supabase
+        .from('animes')
+        .select('cover_url')
+        .eq('season_id', season.id)
+        .not('cover_url', 'is', null)
+        .order('is_featured', { ascending: false })
+        .limit(1)
+        .single()
+    : { data: null };
+
+  return {
+    title,
+    openGraph: {
+      title,
+      description: `Reacciones de anime de la temporada ${season?.name ?? slug}`,
+      siteName: 'xdantonioxd21',
+      images: firstAnime?.cover_url ? [{ url: firstAnime.cover_url }] : [],
+    },
+    twitter: {
+      card:   'summary_large_image',
+      title,
+      images: firstAnime?.cover_url ? [firstAnime.cover_url] : [],
+    },
+  };
 }
 
 export default async function SeasonPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug }  = await params;
   const supabase  = await createClient();
 
-  // Traer la temporada
   const { data: season } = await supabase
     .from('seasons')
     .select('*')
@@ -35,7 +68,6 @@ export default async function SeasonPage({ params }: Props) {
 
   if (!season) notFound();
 
-  // Traer animes de la temporada con conteo de reacciones
   const { data: animes } = await supabase
     .from('animes_with_counts')
     .select('*')
@@ -43,7 +75,6 @@ export default async function SeasonPage({ params }: Props) {
     .order('is_featured', { ascending: false })
     .order('title');
 
-  // Traer todas las reacciones de estos animes en un solo query
   const animeIds = (animes ?? []).map(a => a.id);
   const { data: reactions } = animeIds.length > 0
     ? await supabase
@@ -53,7 +84,6 @@ export default async function SeasonPage({ params }: Props) {
         .order('episode_number')
     : { data: [] };
 
-  // Agrupar reacciones por anime_id
   const reactionsByAnime = (reactions ?? []).reduce<Record<string, any[]>>((acc, r) => {
     if (!acc[r.anime_id]) acc[r.anime_id] = [];
     acc[r.anime_id]!.push(r);
@@ -110,11 +140,11 @@ export default async function SeasonPage({ params }: Props) {
                     key={anime.id}
                     id={`anime-${anime.id}`}
                     style={{
-                      background: 'var(--vh-bg-card)',
-                      border: '1.5px solid var(--vh-border-card)',
+                      background:   'var(--vh-bg-card)',
+                      border:       '1.5px solid var(--vh-border-card)',
                       borderRadius: 'var(--vh-radius-xl)',
-                      overflow: 'hidden',
-                      boxShadow: 'var(--vh-shadow-md)',
+                      overflow:     'hidden',
+                      boxShadow:    'var(--vh-shadow-md)',
                     }}
                   >
                     {/* Header del anime */}
@@ -123,7 +153,6 @@ export default async function SeasonPage({ params }: Props) {
                       borderBottom: '1px solid var(--vh-border)',
                       flexWrap: 'wrap',
                     }}>
-                      {/* Cover pequeño */}
                       {anime.cover_url && (
                         <img
                           src={anime.cover_url}
@@ -217,13 +246,13 @@ export default async function SeasonPage({ params }: Props) {
                             gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
                           }}>
                             {animeReactions.map(r => (
-                          <ReactionCard
-                          key={r.id}
-                          reaction={{
-      ...r,
-      anime_cover: anime.cover_url ?? undefined,
-                            }}
-                          />
+                              <ReactionCard
+                                key={r.id}
+                                reaction={{
+                                  ...r,
+                                  anime_cover: anime.cover_url ?? undefined,
+                                }}
+                              />
                             ))}
                           </div>
                         </>

@@ -10,12 +10,13 @@ interface Props {
 
 export function ReactionCard({ reaction }: Props) {
   const initialThumb =
-    reaction.thumbnail_url
+    reaction.custom_thumbnail           // 1. thumbnail personalizado (poster.png)
+    ?? reaction.thumbnail_url           // 2. thumbnail guardado (YouTube hq)
     ?? (reaction.youtube_id && !reaction.youtube_id.startsWith('http')
         ? getYoutubeThumbnail(reaction.youtube_id, 'hq')
-        : null)
-    ?? reaction.anime_cover
-    ?? null;
+        : null)                         // 3. generado desde youtube_id
+    ?? reaction.anime_cover             // 4. cover del anime
+    ?? null;                            // 5. placeholder
 
   const [thumb, setThumb] = useState<string | null>(initialThumb);
 
@@ -30,7 +31,6 @@ export function ReactionCard({ reaction }: Props) {
               className="vh-card__cover"
               loading="lazy"
               onError={() => {
-                // Intentar con la cover del anime como fallback
                 if (reaction.anime_cover && thumb !== reaction.anime_cover) {
                   setThumb(reaction.anime_cover);
                 } else {
@@ -49,7 +49,7 @@ export function ReactionCard({ reaction }: Props) {
           {reaction.episode_number != null && (
             <div style={{
               position: 'absolute', top: '0.5rem', left: '0.5rem', zIndex: 2,
-              background: 'var(--vh-accent)', color: '#fff',
+              background: 'var(--vh-accent)', color: 'var(--vh-text-on-accent)',
               fontSize: '0.7rem', fontWeight: 700,
               padding: '0.2rem 0.5rem', borderRadius: 'var(--vh-radius-sm)',
             }}>

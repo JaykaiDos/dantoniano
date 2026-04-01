@@ -39,13 +39,13 @@ export type Reaction = {
   anime_id:           string;
   anime?:             Anime;
   episode_number:     number;
-  youtube_url:        string;   // fuente principal (cualquier plataforma)
-  youtube_id:         string;
+  youtube_url?:       string | null;   // ahora opcional
+  youtube_id?:        string | null;   // ahora opcional
   thumbnail_url?:     string;
+  custom_thumbnail?:  string;          // nuevo: thumbnail personalizado
   title:              string;
   duration?:          string;
   published_at?:      string;
-  // Fuentes alternativas
   source_okru?:       string;
   source_streamtape?: string;
   source_doodstream?: string;
