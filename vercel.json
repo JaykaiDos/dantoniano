@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-"value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; frame-src 'self' https://www.youtube.com https://youtube.com https://ok.ru https://streamtape.com https://seekstreaming.com https://dantoniano.seekplays.online https://doodstream.com https://dood.watch https://dood.to https://dood.so https://dood.cx https://dood.la https://dood.li https://dood.re https://dood.pm https://ds2play.com https://bysejikuar.com https://myvidplay.com https://streamwish.com https://streamwish.to https://filemoon.sx https://filemoon.to https://filemoon.cc https://filemoon.in https://moonplayer.online https://voe.sx https://drive.google.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+"value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; frame-src *; connect-src 'self' https://*.supabase.co wss://*.supabase.co https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         {
           "key": "X-Frame-Options",
