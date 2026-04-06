@@ -26,24 +26,37 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: 'Dantoniano — Reacciones de Anime',
-  description: 'Las reacciones de Dantoniano. Todas mis reacciones de anime organizadas por temporada. Encontrá tus series favoritas y reviví los momentos épicos.',
+  description: 'Las reacciones de Dantoniano. Reacciones de anime organizadas por temporada. Encontrá tus series favoritas y reviví los momentos épicos.',
   applicationName: 'xdantonioxd21',
   authors: [{ name: 'xdantonioxd21' }],
   creator: 'xdantonioxd21',
   publisher: 'xdantonioxd21',
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
-    title:       'Dantoniano — Reacciones de Anime',
-    description: 'Todas mis reacciones de anime organizadas por temporada.',
-    siteName:    'xdantonioxd21',
-    url:         'https://dantoniano.vercel.app',
-    locale:      'es_AR',
-    type:        'website',
+    title: 'Dantoniano — Reacciones de Anime',
+    description: 'Reacciones de anime organizadas por temporada.',
+    siteName: 'Dantoniano',
+    url: 'https://dantoniano.vercel.app',
+    locale: 'es_AR',
+    type: 'website',
+    images: [
+      {
+        url: 'https://dantoniano.vercel.app/og-image.jpg', // URL ABSOLUTA obligatoria
+        width: 1200,
+        height: 630,
+        alt: 'Dantoniano — Reacciones de Anime',
+      },
+    ],
   },
   twitter: {
-    card:        'summary_large_image',
-    title:       'Dantoniano — Reacciones de Anime',
-    description: 'Todas mis reacciones de anime organizadas por temporada.',
-    creator:     '@xdantonioxd21',
+    card: 'summary_large_image',
+    title: 'Dantoniano — Reacciones de Anime',
+    description: 'Reacciones de anime organizadas por temporada.',
+    creator: '@xdantonioxd21',
+    images: ['https://dantoniano.vercel.app/og-image.jpg'], // URL ABSOLUTA
   },
 };
 
