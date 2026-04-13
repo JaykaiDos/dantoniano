@@ -8,11 +8,12 @@ import { redirect } from 'next/navigation';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 
 const NAV_ITEMS = [
-  { href: '/admin',            label: 'Dashboard',   icon: '📊' },
-  { href: '/admin/temporadas', label: 'Temporadas',  icon: '📅' },
-  { href: '/admin/animes',     label: 'Animes',      icon: '🎌' },
-  { href: '/admin/reacciones', label: 'Reacciones',  icon: '▶️' },
-  { href: '/admin/perfil',    label: 'Mi Perfil',  icon: '👤' },
+  { href: '/admin',            label: 'Dashboard',  icon: '📊' },
+  { href: '/admin/temporadas', label: 'Temporadas', icon: '📅' },
+  { href: '/admin/animes',     label: 'Animes',     icon: '🎌' },
+  { href: '/admin/reacciones', label: 'Reacciones', icon: '▶️' },
+  { href: '/admin/procesador', label: 'Procesador', icon: '⚡' },
+  { href: '/admin/perfil',     label: 'Redes',  icon: '👤' },
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
