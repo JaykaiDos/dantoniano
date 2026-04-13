@@ -11,14 +11,19 @@ import { createAdminClient } from '@/lib/supabase/admin';
 async function checkVoe(fileCode: string): Promise<{ done: boolean; url: string | null }> {
   try {
     const key = process.env.VOE_API_KEY;
+    // VOE usa queueID para verificar el estado del remote upload
     const res  = await fetch(
-      `https://voe.sx/api/file/info?key=${key}&file_code=${fileCode}`,
+      `https://voe.sx/api/upload/url/list?key=${key}`,
       { cache: 'no-store' }
     );
     const data = await res.json();
-    const file = data?.result?.[0];
-    if (file?.status === 200 || file?.filecode) {
+    const list = data?.list?.data ?? [];
+    const entry = list.find((e: any) => e.file_code === fileCode);
+    if (entry?.status === 3) { // status 3 = completado
       return { done: true, url: `https://voe.sx/e/${fileCode}` };
+    }
+    if (entry?.status === 4) { // status 4 = fallido
+      return { done: true, url: null }; // done=true para no seguir intentando
     }
     return { done: false, url: null };
   } catch { return { done: false, url: null }; }

@@ -1,8 +1,3 @@
-/**
- * POST /api/admin/upload-task
- * Encola una nueva tarea de subida desatendida.
- * Lanza el remote upload a todas las plataformas y guarda los Remote IDs.
- */
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -13,21 +8,25 @@ async function checkAuth() {
   return null;
 }
 
-/** Lanza remote upload a VOE */
-async function startVoeUpload(url: string): Promise<string | null> {
+async function startVoeUpload(url: string): Promise<{ id: string | null; error: string | null }> {
   try {
     const key = process.env.VOE_API_KEY;
     const res  = await fetch(
-      `https://voe.sx/api/remote/add?key=${key}&url=${encodeURIComponent(url)}`,
+      `https://voe.sx/api/upload/url?key=${key}&url=${encodeURIComponent(url)}`,
       { cache: 'no-store' }
     );
     const data = await res.json();
-    return data?.result?.file_code ?? data?.file_code ?? null;
-  } catch { return null; }
+    console.log('VOE response:', JSON.stringify(data));
+    if (data?.status === 200 && data?.result?.file_code) {
+      return { id: data.result.file_code, error: null };
+    }
+    return { id: null, error: data?.message ?? 'Sin respuesta' };
+  } catch (e: any) {
+    return { id: null, error: e.message };
+  }
 }
 
-/** Lanza remote upload a Filemoon */
-async function startFilemoonUpload(url: string): Promise<string | null> {
+async function startFilemoonUpload(url: string): Promise<{ id: string | null; error: string | null }> {
   try {
     const key = process.env.FILEMOON_API_KEY;
     const res  = await fetch(
@@ -35,12 +34,18 @@ async function startFilemoonUpload(url: string): Promise<string | null> {
       { cache: 'no-store' }
     );
     const data = await res.json();
-    return data?.result?.[0]?.id?.toString() ?? null;
-  } catch { return null; }
+    console.log('Filemoon response:', JSON.stringify(data));
+    if (data?.status === 200) {
+      const id = data?.result?.[0]?.id?.toString() ?? data?.result?.id?.toString() ?? null;
+      return { id, error: id ? null : 'ID no encontrado' };
+    }
+    return { id: null, error: data?.msg ?? 'Sin respuesta' };
+  } catch (e: any) {
+    return { id: null, error: e.message };
+  }
 }
 
-/** Lanza remote upload a Doodstream */
-async function startDoodstreamUpload(url: string): Promise<string | null> {
+async function startDoodstreamUpload(url: string): Promise<{ id: string | null; error: string | null }> {
   try {
     const key = process.env.DOODSTREAM_API_KEY;
     const res  = await fetch(
@@ -48,12 +53,18 @@ async function startDoodstreamUpload(url: string): Promise<string | null> {
       { cache: 'no-store' }
     );
     const data = await res.json();
-    return data?.result?.filecode ?? null;
-  } catch { return null; }
+    console.log('Doodstream response:', JSON.stringify(data));
+    if (data?.status === 200) {
+      const id = data?.result?.filecode ?? null;
+      return { id, error: id ? null : 'Filecode no encontrado' };
+    }
+    return { id: null, error: data?.msg ?? 'Sin respuesta' };
+  } catch (e: any) {
+    return { id: null, error: e.message };
+  }
 }
 
-/** Lanza remote upload a SeekStreaming */
-async function startSeekStreamingUpload(url: string): Promise<string | null> {
+async function startSeekStreamingUpload(url: string): Promise<{ id: string | null; error: string | null }> {
   try {
     const key = process.env.SEEKSTREAMING_API_KEY;
     const res  = await fetch(
@@ -61,8 +72,15 @@ async function startSeekStreamingUpload(url: string): Promise<string | null> {
       { cache: 'no-store' }
     );
     const data = await res.json();
-    return data?.result?.[0]?.id?.toString() ?? null;
-  } catch { return null; }
+    console.log('SeekStreaming response:', JSON.stringify(data));
+    if (data?.status === 200) {
+      const id = data?.result?.[0]?.id?.toString() ?? data?.result?.id?.toString() ?? null;
+      return { id, error: id ? null : 'ID no encontrado' };
+    }
+    return { id: null, error: data?.msg ?? 'Sin respuesta' };
+  } catch (e: any) {
+    return { id: null, error: e.message };
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -76,18 +94,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
   }
 
-  // Determinar qué plataformas procesar
   const doVoe           = !platforms || platforms.includes('voe');
   const doFilemoon      = !platforms || platforms.includes('filemoon');
   const doDoodstream    = !platforms || platforms.includes('doodstream');
   const doSeekstreaming = !platforms || platforms.includes('seekstreaming');
 
-  // Lanzar solo las plataformas necesarias en paralelo
-  const [voeId, filemoonId, doodstreamId, seekstreamingId] = await Promise.all([
-    doVoe           ? startVoeUpload(source_url)           : Promise.resolve(null),
-    doFilemoon      ? startFilemoonUpload(source_url)      : Promise.resolve(null),
-    doDoodstream    ? startDoodstreamUpload(source_url)    : Promise.resolve(null),
-    doSeekstreaming ? startSeekStreamingUpload(source_url) : Promise.resolve(null),
+  const [voeRes, filemoonRes, doodstreamRes, seekstreamingRes] = await Promise.all([
+    doVoe           ? startVoeUpload(source_url)           : Promise.resolve({ id: null, error: null }),
+    doFilemoon      ? startFilemoonUpload(source_url)      : Promise.resolve({ id: null, error: null }),
+    doDoodstream    ? startDoodstreamUpload(source_url)    : Promise.resolve({ id: null, error: null }),
+    doSeekstreaming ? startSeekStreamingUpload(source_url) : Promise.resolve({ id: null, error: null }),
   ]);
 
   const supabase = createAdminClient();
@@ -95,21 +111,27 @@ export async function POST(req: NextRequest) {
     .from('upload_tasks')
     .insert({
       anime_id,
-      reaction_id:     reaction_id              ?? null,
-      episode_number:  episode_number           || null,
+      reaction_id:     reaction_id     ?? null,
+      episode_number:  episode_number  || null,
       title,
-      duration:        duration                 || null,
-      published_at:    published_at             || null,
+      duration:        duration        || null,
+      published_at:    published_at    || null,
       source_url,
       status:          'processing',
-      voe_remote_id:           voeId           ?? null,
-      filemoon_remote_id:      filemoonId      ?? null,
-      doodstream_remote_id:    doodstreamId    ?? null,
-      seekstreaming_remote_id: seekstreamingId ?? null,
-      voe_status:          !doVoe           ? 'skipped' : voeId           ? 'processing' : 'error',
-      filemoon_status:     !doFilemoon      ? 'skipped' : filemoonId      ? 'processing' : 'error',
-      doodstream_status:   !doDoodstream    ? 'skipped' : doodstreamId    ? 'processing' : 'error',
-      seekstreaming_status:!doSeekstreaming ? 'skipped' : seekstreamingId ? 'processing' : 'error',
+      voe_remote_id:           voeRes.id           ?? null,
+      filemoon_remote_id:      filemoonRes.id      ?? null,
+      doodstream_remote_id:    doodstreamRes.id    ?? null,
+      seekstreaming_remote_id: seekstreamingRes.id ?? null,
+      voe_status:          !doVoe           ? 'skipped' : voeRes.id           ? 'processing' : 'error',
+      filemoon_status:     !doFilemoon      ? 'skipped' : filemoonRes.id      ? 'processing' : 'error',
+      doodstream_status:   !doDoodstream    ? 'skipped' : doodstreamRes.id    ? 'processing' : 'error',
+      seekstreaming_status:!doSeekstreaming ? 'skipped' : seekstreamingRes.id ? 'processing' : 'error',
+      error_msg: [
+        voeRes.error           ? `VOE: ${voeRes.error}`                   : null,
+        filemoonRes.error      ? `Filemoon: ${filemoonRes.error}`          : null,
+        doodstreamRes.error    ? `Doodstream: ${doodstreamRes.error}`      : null,
+        seekstreamingRes.error ? `SeekStreaming: ${seekstreamingRes.error}` : null,
+      ].filter(Boolean).join(' | ') || null,
     })
     .select()
     .single();
