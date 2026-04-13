@@ -54,6 +54,7 @@ const STATUS_COLOR: Record<TaskStatus, string> = {
 export function UploadTaskMonitor({ initialTasks }: Props) {
   const [tasks,   setTasks]   = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
 
   // Auto-refresh cada 30 segundos si hay tareas en procesamiento
@@ -72,6 +73,30 @@ export function UploadTaskMonitor({ initialTasks }: Props) {
     setTasks(data);
     setLoading(false);
     router.refresh();
+  }
+
+  async function deleteTask(taskId: string) {
+    if (!confirm('¿Estás seguro de que querés eliminar esta tarea?')) return;
+    
+    setDeleting(taskId);
+    try {
+      const res = await fetch('/api/admin/upload-task', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId }),
+      });
+      
+      if (res.ok) {
+        setTasks(tasks.filter(t => t.id !== taskId));
+      } else {
+        alert('Error al eliminar la tarea');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error al eliminar la tarea');
+    } finally {
+      setDeleting(null);
+    }
   }
 
   const active   = tasks.filter(t => t.status === 'processing' || t.status === 'pending');
@@ -147,6 +172,23 @@ export function UploadTaskMonitor({ initialTasks }: Props) {
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: STATUS_COLOR[task.status], whiteSpace: 'nowrap' }}>
                   {task.status.toUpperCase()}
                 </span>
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  disabled={deleting === task.id}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: 'var(--vh-radius-full)',
+                    border: 'none',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: 'var(--vh-danger)',
+                    fontSize: '0.7rem',
+                    cursor: deleting === task.id ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    opacity: deleting === task.id ? 0.5 : 1,
+                  }}
+                >
+                  {deleting === task.id ? '⏳' : '🗑️'} Borrar
+                </button>
               </div>
 
               {/* Estado por plataforma */}
