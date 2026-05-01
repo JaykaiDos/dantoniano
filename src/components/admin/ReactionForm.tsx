@@ -1,6 +1,7 @@
 'use client';
 
 import { VideoUploader } from './VideoUploader';
+import { ImageUploader } from './ImageUploader';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getYoutubeId, getYoutubeThumbnail } from '@/lib/utils';
@@ -101,10 +102,17 @@ export function ReactionForm({ reaction, animes }: Props) {
         </div>
       )}
 
-      {/* ── Uploader automático ── */}
+      {/* ── Uploader automático de video ── */}
       <VideoUploader
         onSuccess={({ streamtapeUrl }) => {
           if (streamtapeUrl) setSourceStreamtape(streamtapeUrl);
+        }}
+      />
+
+      {/* ── Uploader de imagen (thumbnail) ── */}
+      <ImageUploader
+        onSuccess={(imageUrl) => {
+          setCustomThumbnail(imageUrl);
         }}
       />
 
