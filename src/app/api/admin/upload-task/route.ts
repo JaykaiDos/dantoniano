@@ -87,16 +87,36 @@ async function startVoeUpload(url: string): Promise<{ id: string | null; error: 
   return { id: null, error: 'Falló tras reintentos' };
 }
 
+const FILEMOON_API_BASES = [
+  'https://api.byse.sx',
+  'http://185.248.171.24',
+];
+
+async function fetchFilemoonApi(path: string, timeoutMs = UPLOAD_TIMEOUT_MS): Promise<Response> {
+  let lastError: Error | null = null;
+  for (const base of FILEMOON_API_BASES) {
+    try {
+      const headers: Record<string, string> = {};
+      if (base.startsWith('http://185.')) {
+        headers['Host'] = 'api.byse.sx';
+      }
+      const res = await fetchWithTimeout(`${base}${path}`, { cache: 'no-store', headers }, timeoutMs);
+      return res;
+    } catch (e: unknown) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      console.log(`Filemoon API base ${base} failed, trying next...`);
+    }
+  }
+  throw lastError ?? new Error('All Filemoon API bases failed');
+}
+
 async function startFilemoonUpload(url: string): Promise<{ id: string | null; error: string | null }> {
   const key = process.env.FILEMOON_API_KEY;
   if (!key) return { id: null, error: 'FILEMOON_API_KEY no configurada' };
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetchWithTimeout(
-        `https://filemoonapi.com/api/remote/add?key=${key}&url=${encodeURIComponent(url)}`,
-        { cache: 'no-store' }
-      );
+      const res = await fetchFilemoonApi(`/remote/add?key=${key}&url=${encodeURIComponent(url)}`);
 
       if (!res.ok) {
         const errMsg = `HTTP ${res.status}`;
@@ -115,13 +135,15 @@ async function startFilemoonUpload(url: string): Promise<{ id: string | null; er
       try { data = JSON.parse(text); }
       catch { return { id: null, error: `Respuesta inválida: ${text.substring(0, 80)}` }; }
 
-      if (data?.status === 200) {
-        const id = data?.result?.[0]?.id?.toString()
+      if (data?.status === 200 || data?.status === '200') {
+        const filecode = data?.result?.filecode
+          ?? data?.result?.[0]?.filecode
+          ?? data?.result?.[0]?.id?.toString()
           ?? data?.result?.id?.toString()
           ?? null;
-        return id
-          ? { id, error: null }
-          : { id: null, error: 'No se encontró ID en la respuesta' };
+        return filecode
+          ? { id: filecode, error: null }
+          : { id: null, error: 'No se encontró filecode en la respuesta' };
       }
 
       return { id: null, error: data?.msg ?? `Status ${data?.status}` };

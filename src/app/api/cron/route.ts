@@ -82,15 +82,35 @@ async function checkVoe(fileCode: string): Promise<{ done: boolean; url: string 
   }
 }
 
-async function checkFilemoon(id: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
+const FILEMOON_API_BASES = [
+  'https://api.byse.sx',
+  'http://185.248.171.24',
+];
+
+async function fetchFilemoonApi(path: string, timeoutMs = CHECK_TIMEOUT_MS): Promise<Response> {
+  let lastError: Error | null = null;
+  for (const base of FILEMOON_API_BASES) {
+    try {
+      const headers: Record<string, string> = {};
+      if (base.startsWith('http://185.')) {
+        headers['Host'] = 'api.byse.sx';
+      }
+      const res = await fetchWithTimeout(`${base}${path}`, { cache: 'no-store', headers }, timeoutMs);
+      return res;
+    } catch (e: unknown) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      console.log(`Filemoon API base ${base} failed, trying next...`);
+    }
+  }
+  throw lastError ?? new Error('All Filemoon API bases failed');
+}
+
+async function checkFilemoon(filecode: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
   const key = process.env.FILEMOON_API_KEY;
   if (!key) return { done: true, url: null, error: 'FILEMOON_API_KEY no configurada' };
 
   try {
-    const res = await fetchWithTimeout(
-      `https://filemoonapi.com/api/remote/status?key=${key}&id=${id}`,
-      { cache: 'no-store' }
-    );
+    const res = await fetchFilemoonApi(`/remote/status?key=${key}&file_code=${filecode}`);
 
     if (!res.ok) {
       if (res.status >= 500) return { done: false, url: null, error: null };
@@ -104,19 +124,24 @@ async function checkFilemoon(id: string): Promise<{ done: boolean; url: string |
     try { data = JSON.parse(text); }
     catch { return { done: false, url: null, error: null }; }
 
-    if (data?.status !== 200) return { done: false, url: null, error: null };
+    if (data?.status !== 200 && data?.status !== '200') return { done: false, url: null, error: null };
 
     const entry = data?.result?.[0] ?? data?.result;
-    const status = entry?.status;
-    const filecode = entry?.filecode ?? entry?.file_code;
+    const entryStatus = entry?.status;
+    const entryFilecode = entry?.filecode ?? entry?.file_code ?? filecode;
 
-    console.log(`Filemoon remote ID ${id} status: ${status}, filecode: ${filecode}`);
+    console.log(`Filemoon ${filecode} status: ${entryStatus}, filecode: ${entryFilecode}`);
 
-    if (status === 3 || status === '3') {
-      return { done: true, url: filecode ? `https://filemoon.sx/e/${filecode}` : null, error: filecode ? null : 'Completado sin filecode' };
+    if (entryStatus === 'OK' || entryStatus === 200 || entryStatus === '200') {
+      return { done: true, url: `https://filemoon.sx/e/${entryFilecode}`, error: null };
     }
-    if (status === 4 || status === '4') {
-      return { done: true, url: null, error: 'Upload remoto fallido (status 4)' };
+    if (entryStatus === 'ERROR' || entryStatus === 4 || entryStatus === '4') {
+      const errorMsg = entry?.error ?? 'Upload remoto fallido';
+      return { done: true, url: null, error: errorMsg };
+    }
+    if (entry?.progress !== undefined && entryStatus !== 'OK' && entryStatus !== 'ERROR') {
+      console.log(`Filemoon ${filecode} progress: ${entry.progress}%, status: ${entryStatus}`);
+      return { done: false, url: null, error: null };
     }
 
     return { done: false, url: null, error: null };
