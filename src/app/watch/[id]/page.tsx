@@ -140,7 +140,7 @@ export default async function WatchPage({ params }: Props) {
                         </span>
                       )}
                       {reaction.published_at && (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--vh-text-muted)' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--vh-text-muted)' }} suppressHydrationWarning>
                           📅 {new Date(reaction.published_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       )}

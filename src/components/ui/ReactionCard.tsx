@@ -72,7 +72,7 @@ export function ReactionCard({ reaction }: Props) {
         <div className="vh-card__body">
           <h4 className="vh-card__title">{reaction.title}</h4>
           {reaction.published_at != null && (
-            <span className="vh-card__year">
+            <span className="vh-card__year" suppressHydrationWarning>
               {new Date(reaction.published_at).toLocaleDateString('es-AR', {
                 day: 'numeric', month: 'short', year: 'numeric',
               })}

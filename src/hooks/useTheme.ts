@@ -1,6 +1,8 @@
 /**
  * Hook para controlar el tema claro/oscuro.
  * Lee y escribe en localStorage + modifica data-theme en <html>.
+ * 
+ * Evita hydration mismatch inicializando el tema desde el DOM antes del render.
  */
 'use client';
 
@@ -8,13 +10,26 @@ import { useEffect, useState } from 'react';
 
 type Theme = 'light' | 'dark';
 
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>('light');
+// Función para leer el tema actual del DOM sin SSR/Client mismatch
+function getInitialTheme(): Theme {
+  if (typeof document === 'undefined') return 'light';
+  const current = document.documentElement.getAttribute('data-theme');
+  return current === 'dark' ? 'dark' : 'light';
+}
 
-  // Leer tema inicial del DOM (ya fue seteado por el script inline del layout)
+export function useTheme() {
+  // Inicializa desde el DOM para evitar mismatch durante hidratación
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
+  const [mounted, setMounted] = useState(false);
+
+  // Sincroniza una sola vez cuando monta en el cliente
   useEffect(() => {
+    setMounted(true);
     const current = document.documentElement.getAttribute('data-theme');
-    setTheme(current === 'dark' ? 'dark' : 'light');
+    const actualTheme = current === 'dark' ? 'dark' : 'light';
+    if (actualTheme !== theme) {
+      setTheme(actualTheme);
+    }
   }, []);
 
   const toggle = () => {
@@ -29,5 +44,5 @@ export function useTheme() {
     }
   };
 
-  return { theme, toggle, isDark: theme === 'dark' };
+  return { theme, toggle, isDark: theme === 'dark', mounted };
 }

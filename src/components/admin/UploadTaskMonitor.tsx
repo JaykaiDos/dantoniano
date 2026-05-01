@@ -170,7 +170,7 @@ export function UploadTaskMonitor({ initialTasks }: Props) {
                   }}>
                     {task.title}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--vh-text-muted)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--vh-text-muted)' }} suppressHydrationWarning>
                     {task.anime?.title ?? '—'} · {new Date(task.created_at).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
