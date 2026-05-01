@@ -2,243 +2,290 @@
  * GET /api/cron
  * Endpoint llamado por cron-job.org cada 2 minutos.
  * Verifica el estado de cada tarea en procesamiento y actualiza la DB.
- * Cuando todas las plataformas terminan, crea la reacción automáticamente.
+ * Cuando al menos una plataforma tiene URL y el resto terminó (done/error),
+ * vincula la reacción automáticamente.
+ *
+ * Robustez:
+ * - done+url=null se marca como error (no como done)
+ * - check_count y MAX_CHECKS evitan que tareas se queden en processing infinitamente
+ * - Vincula parcialmente si al menos 1 plataforma tiene URL y el resto ya terminó
+ * - Actualiza error_msg y status global de la tarea
+ * - Timeouts en todas las llamadas HTTP
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-/** Verifica estado en VOE */
-async function checkVoe(fileCode: string): Promise<{ done: boolean; url: string | null }> {
+const MAX_CHECKS = 90;
+const CHECK_TIMEOUT_MS = 30_000;
+
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = CHECK_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const key = process.env.VOE_API_KEY;
-    // VOE usa file_code para verificar el estado del remote upload
-    const res  = await fetch(
-      `https://voe.sx/api/upload/url/list?key=${key}`,
-      { cache: 'no-store' }
-    );
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.log('VOE parse error:', text.substring(0, 200));
-      return { done: false, url: null };
-    }
-    console.log('VOE list response:', JSON.stringify(data).substring(0, 500));
-    const list = data?.list?.data ?? data?.data ?? [];
-    const entry = list.find((e: any) => e.file_code === fileCode || e.id === fileCode);
-    console.log(`VOE searching for ${fileCode}, found entries: ${list.length}, match: ${entry ? 'YES' : 'NO'}`);
-    if (entry?.status === 3 || entry?.status === '3') { // status 3 = completado
-      return { done: true, url: `https://voe.sx/e/${fileCode}` };
-    }
-    if (entry?.status === 4 || entry?.status === '4') { // status 4 = fallido
-      return { done: true, url: null }; // done=true para no seguir intentando
-    }
-    return { done: false, url: null };
-  } catch (e: any) {
-    console.error('VOE check error:', e.message);
-    return { done: false, url: null };
-  }
-}
-  
-/** Verifica estado en Filemoon */
-async function checkFilemoon(id: string): Promise<{ done: boolean; url: string | null }> {
-  try {
-    const key = process.env.FILEMOON_API_KEY;
-    const res  = await fetch(
-      `https://api.byse.sx/remote/status?key=${key}&file_code=${id}`,
-      { cache: 'no-store' }
-    );
-    const text = await res.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.log('Filemoon parse error:', text.substring(0, 200));
-      return { done: false, url: null };
-    }
-    // Status: COMPLETED, WORKING, FAILED, QUEUED
-    if (data?.status === 'COMPLETED') {
-      return { done: true, url: `https://filemoon.sx/e/${id}` };
-    }
-    if (data?.status === 'FAILED') {
-      return { done: true, url: null };
-    }
-    return { done: false, url: null };
-  } catch (e: any) {
-    console.error('Filemoon check error:', e.message);
-    return { done: false, url: null };
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-/** Verifica estado en Doodstream */
-async function checkDoodstream(filecode: string): Promise<{ done: boolean; url: string | null }> {
+async function checkVoe(fileCode: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
+  const key = process.env.VOE_API_KEY;
+  if (!key) return { done: true, url: null, error: 'VOE_API_KEY no configurada' };
+
   try {
-    const key = process.env.DOODSTREAM_API_KEY;
-    
-    // Use the specific file_code endpoint
+    const res = await fetchWithTimeout(
+      `https://voe.sx/api/upload/url/list?key=${key}`,
+      { cache: 'no-store' }
+    );
+
+    if (!res.ok) {
+      if (res.status >= 500) return { done: false, url: null, error: null };
+      return { done: true, url: null, error: `VOE API HTTP ${res.status}` };
+    }
+
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch {
+      console.log('VOE parse error:', text.substring(0, 200));
+      return { done: false, url: null, error: null };
+    }
+
+    console.log('VOE list response:', JSON.stringify(data).substring(0, 500));
+
+    const list = data?.list?.data ?? data?.data ?? [];
+    type VoeEntry = { file_code?: string; id?: string; status?: number | string };
+    const entry = list.find((e: VoeEntry) => e.file_code === fileCode || e.id === fileCode);
+
+    console.log(`VOE searching for ${fileCode}, found entries: ${list.length}, match: ${entry ? 'YES' : 'NO'}`);
+
+    if (!entry) {
+      return { done: false, url: null, error: null };
+    }
+
+    if (entry?.status === 3 || entry?.status === '3') {
+      return { done: true, url: `https://voe.sx/e/${fileCode}`, error: null };
+    }
+    if (entry?.status === 4 || entry?.status === '4') {
+      return { done: true, url: null, error: 'Upload remoto fallido (status 4)' };
+    }
+
+    return { done: false, url: null, error: null };
+  } catch (e) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    if (e instanceof Error && e.name === 'AbortError') {
+      console.error('VOE check timeout');
+      return { done: false, url: null, error: 'Timeout verificando VOE' };
+    }
+    console.error('VOE check error:', error);
+    return { done: false, url: null, error: null };
+  }
+}
+
+async function checkFilemoon(id: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
+  const key = process.env.FILEMOON_API_KEY;
+  if (!key) return { done: true, url: null, error: 'FILEMOON_API_KEY no configurada' };
+
+  try {
+    const res = await fetchWithTimeout(
+      `https://filemoonapi.com/api/remote/status?key=${key}&id=${id}`,
+      { cache: 'no-store' }
+    );
+
+    if (!res.ok) {
+      if (res.status >= 500) return { done: false, url: null, error: null };
+      return { done: true, url: null, error: `Filemoon API HTTP ${res.status}` };
+    }
+
+    const text = await res.text();
+    console.log('Filemoon status response:', text.substring(0, 300));
+
+    let data;
+    try { data = JSON.parse(text); }
+    catch { return { done: false, url: null, error: null }; }
+
+    if (data?.status !== 200) return { done: false, url: null, error: null };
+
+    const entry = data?.result?.[0] ?? data?.result;
+    const status = entry?.status;
+    const filecode = entry?.filecode ?? entry?.file_code;
+
+    console.log(`Filemoon remote ID ${id} status: ${status}, filecode: ${filecode}`);
+
+    if (status === 3 || status === '3') {
+      return { done: true, url: filecode ? `https://filemoon.sx/e/${filecode}` : null, error: filecode ? null : 'Completado sin filecode' };
+    }
+    if (status === 4 || status === '4') {
+      return { done: true, url: null, error: 'Upload remoto fallido (status 4)' };
+    }
+
+    return { done: false, url: null, error: null };
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && e.name === 'AbortError') {
+      console.error('Filemoon check timeout');
+      return { done: false, url: null, error: 'Timeout verificando Filemoon' };
+    }
+    console.error('Filemoon check error:', message);
+    return { done: false, url: null, error: null };
+  }
+}
+
+async function checkDoodstream(filecode: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
+  const key = process.env.DOODSTREAM_API_KEY;
+  if (!key) return { done: true, url: null, error: 'DOODSTREAM_API_KEY no configurada' };
+
+  try {
     console.log(`Doodstream: checking status for file_code=${filecode}`);
-    const res  = await fetch(
+    const res = await fetchWithTimeout(
       `https://doodapi.co/api/urlupload/status?key=${key}&file_code=${filecode}`,
       { cache: 'no-store' }
     );
-    
+
+    if (!res.ok) {
+      if (res.status >= 500) return { done: false, url: null, error: null };
+      return { done: true, url: null, error: `Doodstream API HTTP ${res.status}` };
+    }
+
     const text = await res.text();
     console.log(`Doodstream status response (${res.status}):`, text.substring(0, 300));
-    
+
     if (!text || text.trim() === '') {
       console.log('Doodstream: empty response');
-      return { done: false, url: null };
+      return { done: false, url: null, error: null };
     }
-    
+
     let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseErr) {
-      console.error('Doodstream parse error:', parseErr);
-      return { done: false, url: null };
-    }
-    
-    // Response format: { status: 200, result: [ { status: "working|completed|error", file_code: "xxx" } ] }
+    try { data = JSON.parse(text); }
+    catch { return { done: false, url: null, error: null }; }
+
     const result = data?.result?.[0];
-    
-    // If result array is empty, it means the file was already processed and removed from queue
-    // Try to fetch file info to confirm it exists
+
     if (!result) {
-      console.log('Doodstream: result array empty, checking with file/info endpoint');
-      
+      console.log('Doodstream: result array empty, checking with file/check endpoint');
       try {
-        const infoRes = await fetch(
+        const infoRes = await fetchWithTimeout(
           `https://doodapi.co/api/file/check?key=${key}&file_code=${filecode}`,
           { cache: 'no-store' }
         );
         const infoText = await infoRes.text();
         console.log('Doodstream file/check response:', infoText.substring(0, 200));
-        
-        let infoData = JSON.parse(infoText);
+        const infoData = JSON.parse(infoText);
         if (infoData?.status === 'Active' || infoData?.filecode) {
           console.log('Doodstream: file confirmed as Active/Completed');
-          return { done: true, url: `https://doodstream.com/d/${filecode}` };
+          return { done: true, url: `https://doodstream.com/d/${filecode}`, error: null };
         }
       } catch (e) {
         console.log('Doodstream file/check failed:', e instanceof Error ? e.message : 'unknown error');
       }
-      
-      // If both endpoints fail, assume it's completed (safer than keeping it in processing forever)
+
       console.log('Doodstream: assuming completed since not in list');
-      return { done: true, url: `https://doodstream.com/d/${filecode}` };
+      return { done: true, url: `https://doodstream.com/d/${filecode}`, error: null };
     }
-    
+
     const fileStatus = result?.status;
     console.log(`Doodstream ${filecode} status: "${fileStatus}"`);
-    
+
     if (fileStatus === 'completed') {
-      return { done: true, url: `https://doodstream.com/d/${filecode}` };
+      return { done: true, url: `https://doodstream.com/d/${filecode}`, error: null };
     }
     if (fileStatus === 'error') {
-      return { done: true, url: null };
+      return { done: true, url: null, error: 'Upload remoto fallido' };
     }
     if (fileStatus === 'working') {
-      return { done: false, url: null };
+      return { done: false, url: null, error: null };
     }
-    
+
     console.log('Doodstream: unknown status', fileStatus);
-    return { done: false, url: null };
-  } catch (e: any) {
-    console.error('Doodstream check error:', e.message);
-    return { done: false, url: null };
+    return { done: false, url: null, error: null };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Doodstream check timeout');
+      return { done: false, url: null, error: 'Timeout verificando Doodstream' };
+    }
+    console.error('Doodstream check error:', message);
+    return { done: false, url: null, error: null };
   }
 }
 
-/** Verifica estado en SeekStreaming */
-async function checkSeekStreaming(taskId: string): Promise<{ done: boolean; url: string | null }> {
+async function checkSeekStreaming(taskId: string): Promise<{ done: boolean; url: string | null; error: string | null }> {
+  const key = process.env.SEEKSTREAMING_API_KEY;
+  if (!key) return { done: true, url: null, error: 'SEEKSTREAMING_API_KEY no configurada' };
+
   try {
-    const key = process.env.SEEKSTREAMING_API_KEY;
-    if (!key) {
-      console.error('SeekStreaming: API key not configured');
-      return { done: false, url: null };
-    }
-    
-    // SeekStreaming v1 API: GET /api/v1/video/advance-upload/{id}
     console.log(`SeekStreaming: checking task status for taskId=${taskId}`);
-    const statusUrl = `https://seekstreaming.com/api/v1/video/advance-upload/${taskId}`;
-    
-    const res = await fetch(statusUrl, {
-      cache: 'no-store',
-      headers: {
-        'api-token': key,
+    const res = await fetchWithTimeout(
+      `https://seekstreaming.com/api/v1/video/advance-upload/${taskId}`,
+      {
+        cache: 'no-store',
+        headers: { 'api-token': key },
       }
-    });
-    
+    );
+
     const text = await res.text();
-    console.log('SeekStreaming task status response ('+res.status+'):', text.substring(0, 500));
-    
+    console.log('SeekStreaming task status response (' + res.status + '):', text.substring(0, 500));
+
     if (!text || text.trim() === '') {
       console.log('SeekStreaming: empty response');
-      return { done: false, url: null };
+      return { done: false, url: null, error: null };
     }
-    
+
     let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseErr) {
-      console.error('SeekStreaming JSON parse error:', parseErr);
-      return { done: false, url: null };
-    }
-    
-    // Check API response status
+    try { data = JSON.parse(text); }
+    catch { return { done: false, url: null, error: null }; }
+
     if (res.status === 404) {
       console.error('SeekStreaming: task not found (404)');
-      return { done: true, url: null }; // Consider not found as error
+      return { done: true, url: null, error: 'Task not found (404)' };
     }
-    
-    if (res.status !== 200) {
-      console.error('SeekStreaming: API error -', data?.message || `HTTP ${res.status}`);
-      return { done: false, url: null };
+
+    if (res.status === 401) {
+      return { done: true, url: null, error: 'Authentication failed (401)' };
     }
-    
-    // Task status from response
+
+    if (res.status >= 500) {
+      return { done: false, url: null, error: null };
+    }
+
     const taskStatus = data?.status;
     console.log('SeekStreaming task status:', taskStatus);
-    
+
     if (taskStatus === 'Completed') {
       const videos = data?.videos || [];
       console.log('SeekStreaming: task completed with', videos.length, 'videos');
-      
       if (videos.length > 0) {
-        // Build URL from first video ID
-        // SeekStreaming video URL pattern: https://seekstreaming.com/v/{videoId}
         const videoId = videos[0];
-        const url = `https://seekstreaming.com/v/${videoId}`;
+        const playerUrl = process.env.SEEKSTREAMING_PLAYER_URL || 'https://seekstreaming.com';
+        const url = `${playerUrl}/#${videoId}`;
         console.log('SeekStreaming video ready at:', url);
-        return { done: true, url };
+        return { done: true, url, error: null };
       }
-      
-      console.log('SeekStreaming: task completed but no videos generated');
-      return { done: true, url: null };
+      return { done: true, url: null, error: 'Completado sin videos generados' };
     }
-    
+
     if (taskStatus === 'Queued' || taskStatus === 'Processing') {
-      console.log('SeekStreaming: task still processing', taskId);
-      return { done: false, url: null };
+      return { done: false, url: null, error: null };
     }
-    
+
     if (taskStatus === 'Failed' || taskStatus === 'Error') {
-      console.error('SeekStreaming: task failed with error:', data?.error || 'unknown error');
-      return { done: true, url: null };
+      return { done: true, url: null, error: data?.error || 'Task failed' };
     }
-    
-    console.log('SeekStreaming: unknown task status:', taskStatus, 'full response:', JSON.stringify(data).substring(0, 300));
-    return { done: false, url: null };
-    
-  } catch (e: any) {
-    console.error('SeekStreaming task check error:', e.message);
-    return { done: false, url: null };
+
+    console.log('SeekStreaming: unknown task status:', taskStatus);
+    return { done: false, url: null, error: null };
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && e.name === 'AbortError') {
+      console.error('SeekStreaming check timeout');
+      return { done: false, url: null, error: 'Timeout verificando SeekStreaming' };
+    }
+    console.error('SeekStreaming task check error:', errorMessage);
+    return { done: false, url: null, error: null };
   }
 }
 
 export async function GET(req: NextRequest) {
-  // Verificar secret del cron
   const secret = req.nextUrl.searchParams.get('secret');
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -246,11 +293,10 @@ export async function GET(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Traer tareas en procesamiento
   const { data: tasks } = await supabase
     .from('upload_tasks')
     .select('*')
-    .eq('status', 'processing')
+    .in('status', ['processing', 'pending'])
     .limit(20);
 
   if (!tasks || tasks.length === 0) {
@@ -260,114 +306,176 @@ export async function GET(req: NextRequest) {
   let processed = 0;
 
   for (const task of tasks) {
-    const updates: Record<string, any> = {};
+    const updates: Record<string, string | null> = {};
+    const errorUpdates: string[] = [];
 
-    // Verificar VOE
+    const currentCheckCount = (task.check_count ?? 0) + 1;
+
     if (task.voe_status === 'processing' && task.voe_remote_id) {
-      const { done, url } = await checkVoe(task.voe_remote_id);
-      if (done) {
+      const { done, url, error } = await checkVoe(task.voe_remote_id);
+      if (done && url) {
         updates.voe_status = 'done';
-        updates.voe_url    = url;
+        updates.voe_url = url;
+      } else if (done && !url) {
+        updates.voe_status = 'error';
+        if (error) errorUpdates.push(`VOE: ${error}`);
       }
     }
 
-    // Verificar Filemoon
     if (task.filemoon_status === 'processing' && task.filemoon_remote_id) {
-      const { done, url } = await checkFilemoon(task.filemoon_remote_id);
-      if (done) {
+      const { done, url, error } = await checkFilemoon(task.filemoon_remote_id);
+      if (done && url) {
         updates.filemoon_status = 'done';
-        updates.filemoon_url    = url;
+        updates.filemoon_url = url;
+      } else if (done && !url) {
+        updates.filemoon_status = 'error';
+        if (error) errorUpdates.push(`Filemoon: ${error}`);
       }
     }
 
-    // Verificar Doodstream
     if (task.doodstream_status === 'processing' && task.doodstream_remote_id) {
-      const { done, url } = await checkDoodstream(task.doodstream_remote_id);
-      if (done) {
+      const { done, url, error } = await checkDoodstream(task.doodstream_remote_id);
+      if (done && url) {
         updates.doodstream_status = 'done';
-        updates.doodstream_url    = url;
+        updates.doodstream_url = url;
+      } else if (done && !url) {
+        updates.doodstream_status = 'error';
+        if (error) errorUpdates.push(`Doodstream: ${error}`);
       }
     }
 
-    // Verificar SeekStreaming
     if (task.seekstreaming_status === 'processing' && task.seekstreaming_remote_id) {
-      const { done, url } = await checkSeekStreaming(task.seekstreaming_remote_id);
-      if (done) {
+      const { done, url, error } = await checkSeekStreaming(task.seekstreaming_remote_id);
+      if (done && url) {
         updates.seekstreaming_status = 'done';
-        updates.seekstreaming_url    = url;
+        updates.seekstreaming_url = url;
+      } else if (done && !url) {
+        updates.seekstreaming_status = 'error';
+        if (error) errorUpdates.push(`SeekStreaming: ${error}`);
       }
     }
 
-    if (Object.keys(updates).length > 0) {
-      // Mergear con el estado actual de la tarea
-      const mergedTask = { ...task, ...updates };
-
-      // Verificar si todas las plataformas terminaron
-      const statuses = [
-        mergedTask.voe_status,
-        mergedTask.filemoon_status,
-        mergedTask.doodstream_status,
-        mergedTask.seekstreaming_status,
+    if (currentCheckCount >= MAX_CHECKS) {
+      console.warn(`Task ${task.id}: MAX_CHECKS reached (${MAX_CHECKS}), marking stuck platforms as error`);
+      const platFields: { statusField: string; name: string }[] = [
+        { statusField: 'voe_status', name: 'VOE' },
+        { statusField: 'filemoon_status', name: 'Filemoon' },
+        { statusField: 'doodstream_status', name: 'Doodstream' },
+        { statusField: 'seekstreaming_status', name: 'SeekStreaming' },
       ];
-      const allDone = statuses.every(s => s === 'done' || s === 'error' || s === 'skipped');
-      const anyDone = statuses.some(s => s === 'done');
-      
-      console.log(`Task ${task.id}: statuses=${JSON.stringify(statuses)}, allDone=${allDone}, anyDone=${anyDone}`);
-
-      if (allDone && anyDone) {
-  if (task.reaction_id) {
-    // Actualizar reacción existente
-    const updateFields: Record<string, string | null> = {};
-    if (mergedTask.voe_url)          updateFields.source_voe        = mergedTask.voe_url;
-    if (mergedTask.filemoon_url)     updateFields.source_filemoon   = mergedTask.filemoon_url;
-    if (mergedTask.doodstream_url)   updateFields.source_doodstream = mergedTask.doodstream_url;
-    if (mergedTask.seekstreaming_url)updateFields.source_streamwish = mergedTask.seekstreaming_url;
-
-    console.log('Updating reaction', task.reaction_id, 'with fields:', JSON.stringify(updateFields));
-    
-    const { error: updateError } = await supabase
-      .from('reactions')
-      .update(updateFields)
-      .eq('id', task.reaction_id);
-    
-    if (updateError) {
-      console.error('Error updating reaction:', updateError);
-    } else {
-      console.log('Reaction updated successfully');
+      for (const { statusField, name } of platFields) {
+        const currentStatus = updates[statusField] ?? task[statusField];
+        if (currentStatus === 'processing') {
+          updates[statusField] = 'error';
+          errorUpdates.push(`${name}: timeout tras ${MAX_CHECKS} verificaciones`);
+        }
+      }
     }
-  } else {
-    // Crear nueva reacción
-    console.log('Creating new reaction for task:', task.id);
-    const reactionData = {
-      anime_id:          task.anime_id,
-      episode_number:    task.episode_number,
-      title:             task.title,
-      duration:          task.duration,
-      published_at:      task.published_at,
-      youtube_url:       mergedTask.voe_url ?? mergedTask.filemoon_url ?? mergedTask.doodstream_url ?? mergedTask.seekstreaming_url,
-      youtube_id:        'auto',
-      thumbnail_url:     null,
-      source_voe:        mergedTask.voe_url          ?? null,
-      source_filemoon:   mergedTask.filemoon_url     ?? null,
-      source_doodstream: mergedTask.doodstream_url   ?? null,
-      source_streamwish: mergedTask.seekstreaming_url ?? null,
+
+    const mergedTask = { ...task, ...updates };
+
+    const statuses = [
+      mergedTask.voe_status,
+      mergedTask.filemoon_status,
+      mergedTask.doodstream_status,
+      mergedTask.seekstreaming_status,
+    ];
+    const allTerminal = statuses.every(s => s === 'done' || s === 'error' || s === 'skipped');
+    const hasAnyUrl = !!(mergedTask.voe_url || mergedTask.filemoon_url || mergedTask.doodstream_url || mergedTask.seekstreaming_url);
+    const hasAnyProcessing = statuses.some(s => s === 'processing');
+
+    console.log(`Task ${task.id}: statuses=${JSON.stringify(statuses)}, allTerminal=${allTerminal}, hasAnyUrl=${hasAnyUrl}, checks=${currentCheckCount}`);
+
+    let shouldLinkReaction = false;
+
+    if (allTerminal && hasAnyUrl) {
+      shouldLinkReaction = true;
+    } else if (!hasAnyProcessing && hasAnyUrl) {
+      shouldLinkReaction = true;
+    } else if (allTerminal && !hasAnyUrl) {
+      console.warn(`Task ${task.id}: all platforms finished but no URLs — will not link reaction`);
+    }
+
+    if (shouldLinkReaction) {
+      const linkFields: Record<string, string | null> = {};
+      if (mergedTask.voe_url) linkFields.source_voe = mergedTask.voe_url;
+      if (mergedTask.filemoon_url) linkFields.source_filemoon = mergedTask.filemoon_url;
+      if (mergedTask.doodstream_url) linkFields.source_doodstream = mergedTask.doodstream_url;
+      if (mergedTask.seekstreaming_url) linkFields.source_streamwish = mergedTask.seekstreaming_url;
+
+      if (task.reaction_id) {
+        console.log('Updating reaction', task.reaction_id, 'with fields:', JSON.stringify(linkFields));
+        const { error: updateError } = await supabase
+          .from('reactions')
+          .update(linkFields)
+          .eq('id', task.reaction_id);
+
+        if (updateError) {
+          console.error('Error updating reaction:', updateError);
+          errorUpdates.push(`Error vinculando reacción: ${updateError.message}`);
+        } else {
+          console.log('Reaction updated successfully');
+        }
+      } else {
+        console.log('Creating new reaction for task:', task.id);
+        const reactionData = {
+          anime_id: task.anime_id,
+          episode_number: task.episode_number,
+          title: task.title,
+          duration: task.duration,
+          published_at: task.published_at,
+          youtube_url: mergedTask.voe_url ?? mergedTask.filemoon_url ?? mergedTask.doodstream_url ?? mergedTask.seekstreaming_url,
+          youtube_id: 'auto',
+          thumbnail_url: null,
+          source_voe: mergedTask.voe_url ?? null,
+          source_filemoon: mergedTask.filemoon_url ?? null,
+          source_doodstream: mergedTask.doodstream_url ?? null,
+          source_streamwish: mergedTask.seekstreaming_url ?? null,
+        };
+        console.log('Reaction data:', JSON.stringify(reactionData).substring(0, 300));
+
+        const { error: insertError } = await supabase.from('reactions').insert(reactionData);
+        if (insertError) {
+          console.error('Error creating reaction:', insertError);
+          errorUpdates.push(`Error creando reacción: ${insertError.message}`);
+        } else {
+          console.log('Reaction created successfully');
+        }
+      }
+    }
+
+    const existingErrors = task.error_msg ? task.error_msg.split(' | ') : [];
+    const allErrors = [...existingErrors, ...errorUpdates].filter(Boolean);
+    const combinedErrorMsg = allErrors.length > 0 ? allErrors.join(' | ') : null;
+
+    let taskStatus: string;
+    if (allTerminal) {
+      taskStatus = hasAnyUrl ? 'done' : 'error';
+    } else if (shouldLinkReaction) {
+      taskStatus = 'done';
+    } else {
+      taskStatus = 'processing';
+    }
+
+    const finalUpdates: Record<string, string | number | null> = {
+      ...updates,
+      status: taskStatus,
+      error_msg: combinedErrorMsg,
+      check_count: currentCheckCount,
     };
-    console.log('Reaction data:', JSON.stringify(reactionData).substring(0, 300));
-    
-    const { error: insertError } = await supabase.from('reactions').insert(reactionData);
-    if (insertError) {
-      console.error('Error creating reaction:', insertError);
-    } else {
-      console.log('Reaction created successfully');
+
+    if (taskStatus === 'done') {
+      finalUpdates.completed_at = new Date().toISOString();
     }
-  }
-}
 
-      await supabase
-        .from('upload_tasks')
-        .update(updates)
-        .eq('id', task.id);
+    const { error: updateTaskError } = await supabase
+      .from('upload_tasks')
+      .update(finalUpdates)
+      .eq('id', task.id);
 
+    if (updateTaskError) {
+      console.error(`Error updating task ${task.id}:`, updateTaskError);
+    } else {
       processed++;
     }
   }
