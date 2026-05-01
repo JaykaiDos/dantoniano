@@ -111,7 +111,21 @@ async function checkFilemoon(filecode: string): Promise<{ done: boolean; url: st
 
     if (data?.status !== 200 && data?.status !== '200') return { done: false, url: null, error: null };
 
-    const entry = data?.result?.[0] ?? data?.result;
+    const result = data?.result;
+    if (Array.isArray(result) && result.length === 0) {
+      try {
+        const infoRes = await fetchFilemoonApi(`/file/info?key=${key}&file_code=${filecode}`);
+        const infoText = await infoRes.text();
+        const infoData = JSON.parse(infoText);
+        const fileInfo = infoData?.result?.[0] ?? infoData?.result;
+        if (fileInfo?.canplay === 1 || fileInfo?.status === 200) {
+          return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+        }
+      } catch { /* ignore */ }
+      return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+    }
+
+    const entry = result?.[0] ?? result;
     const entryStatus = entry?.status;
     const entryFilecode = entry?.filecode ?? entry?.file_code ?? filecode;
 

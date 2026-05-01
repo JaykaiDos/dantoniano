@@ -77,7 +77,19 @@ async function checkFilemoon(filecode: string): Promise<{ done: boolean; url: st
     }
     const data = await res.json();
     if (data?.status !== 200 && data?.status !== '200') return { done: false, url: null, error: null };
-    const entry = data?.result?.[0] ?? data?.result;
+    const result = data?.result;
+    if (Array.isArray(result) && result.length === 0) {
+      try {
+        const infoRes = await fetchFilemoonApi(`/file/info?key=${key}&file_code=${filecode}`);
+        const infoData = await infoRes.json();
+        const fileInfo = infoData?.result?.[0] ?? infoData?.result;
+        if (fileInfo?.canplay === 1 || fileInfo?.status === 200) {
+          return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+        }
+      } catch { /* ignore */ }
+      return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+    }
+    const entry = result?.[0] ?? result;
     const entryStatus = entry?.status;
     const entryFilecode = entry?.filecode ?? entry?.file_code ?? filecode;
     if (entryStatus === 'OK' || entryStatus === 200 || entryStatus === '200') return { done: true, url: `https://filemoon.sx/e/${entryFilecode}`, error: null };
@@ -162,7 +174,7 @@ async function main() {
     .in('status', ['processing', 'pending'])
     .limit(20);
 
-  if (fetchError) { console.error('Error fetching tasks:', fetchError); process.exit(1); }
+  if (fetchError) { console.error('❌ Error fetching tasks:', fetchError); process.exit(1); }
   if (!tasks || tasks.length === 0) { console.log('✅ No hay tareas activas.'); return; }
 
   console.log(`📋 Encontradas ${tasks.length} tareas activas\n`);
