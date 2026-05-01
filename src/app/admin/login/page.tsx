@@ -83,34 +83,58 @@ export default function AdminLoginPage() {
             <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--vh-text-secondary)' }}>
               Email
             </label>
-            <div className="vh-search-bar__wrapper" style={{ maxWidth: 'none', padding: '0 1rem' }}>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="admin@ejemplo.com"
-                className="vh-search-bar__input"
-                required
-                autoComplete="email"
-              />
-            </div>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="admin@ejemplo.com"
+              required
+              autoComplete="email"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                background: 'var(--vh-bg-elevated)',
+                border: '1.5px solid var(--vh-border)',
+                borderRadius: 'var(--vh-radius-md)',
+                color: 'var(--vh-text-primary)',
+                fontSize: '0.97rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+                transition: 'border-color var(--vh-transition)',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--vh-border-focus)'}
+              onBlur={e => e.target.style.borderColor = 'var(--vh-border)'}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--vh-text-secondary)' }}>
               Contraseña
             </label>
-            <div className="vh-search-bar__wrapper" style={{ maxWidth: 'none', padding: '0 1rem' }}>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="vh-search-bar__input"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+              autoComplete="current-password"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                background: 'var(--vh-bg-elevated)',
+                border: '1.5px solid var(--vh-border)',
+                borderRadius: 'var(--vh-radius-md)',
+                color: 'var(--vh-text-primary)',
+                fontSize: '0.97rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+                transition: 'border-color var(--vh-transition)',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--vh-border-focus)'}
+              onBlur={e => e.target.style.borderColor = 'var(--vh-border)'}
+            />
           </div>
 
           <button
