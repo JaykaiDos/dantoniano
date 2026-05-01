@@ -136,7 +136,7 @@ export function BuscarClient({ animes, seasons }: Props) {
       ) : (
         <div className="vh-cards-grid">
           {results.map(anime => (
-            <AnimeCard key={anime.id} anime={anime} showSeason />
+            <AnimeCard key={anime.id} anime={anime} />
           ))}
         </div>
       )}
