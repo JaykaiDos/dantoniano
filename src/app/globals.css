@@ -912,3 +912,12 @@ body::before {
 @media (min-width: 769px) and (max-width: 1023px) {
   .season-card-new { padding: 1.5rem 1.25rem; }
 }
+
+/* ── Scrollbar custom para sidebar de episodios ── */
+.episode-sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.episode-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.episode-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--vh-border);
+  border-radius: 999px;
+}
+.episode-sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--vh-border-hover); }
