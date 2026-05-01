@@ -10,7 +10,15 @@ import { MainNav } from '@/components/layout/MainNav';
 import { VideoPlayer } from '@/components/ui/VideoPlayer';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import type { Metadata } from 'next';
-import type { Reaction } from '@/types';
+
+interface EpisodeRow {
+  id: string;
+  episode_number: number;
+  title: string;
+  duration: string | null;
+  thumbnail_url: string | null;
+  youtube_id: string | null;
+}
 
 interface WatchAnime {
   id: string;
@@ -68,7 +76,7 @@ export default async function WatchPage({ params }: Props) {
   const anime = reaction.anime as WatchAnime | null;
   const season = anime?.season;
 
-  const episodes = (allEpisodes ?? []) as Reaction[];
+  const episodes = (allEpisodes ?? []) as EpisodeRow[];
   const currentIndex = episodes.findIndex(e => e.id === id);
   const prevEpisode = currentIndex > 0 ? episodes[currentIndex - 1] : null;
   const nextEpisode = currentIndex < episodes.length - 1 ? episodes[currentIndex + 1] : null;
@@ -298,7 +306,7 @@ export default async function WatchPage({ params }: Props) {
               }}
               className="episode-sidebar-scroll"
               >
-                {(allEpisodes ?? []).map((ep: Reaction) => {
+                {(allEpisodes ?? []).map((ep: EpisodeRow) => {
                   const isActive = ep.id === id;
                   const thumb = ep.thumbnail_url
                     ?? (ep.youtube_id && !ep.youtube_id.startsWith('http')
