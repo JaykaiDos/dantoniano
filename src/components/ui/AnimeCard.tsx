@@ -18,7 +18,7 @@ interface Props {
 
 export function AnimeCard({ anime, showSeason = false }: Props) {
   return (
-    <article className="vh-card">
+    <article className="vh-card vh-card--anime">
       {/* Cover */}
       <div className="vh-card__cover-wrapper">
         {anime.cover_url ? (

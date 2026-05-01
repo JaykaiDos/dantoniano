@@ -326,8 +326,8 @@ body::before {
 ═══════════════════════════════════════════════════════════ */
 .vh-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .vh-card {
@@ -363,19 +363,23 @@ body::before {
   box-shadow: var(--vh-shadow-lg), 0 0 28px rgba(239,68,68,0.22);
 }
 
-.vh-card__cover-wrapper { width: 100%; aspect-ratio: 16/9; overflow: hidden; background: var(--vh-bg-elevated); position: relative; z-index: 1; }
-.vh-card__cover         { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--vh-transition-slow); }
+/* Base card — 16:9 (para ReactionCard que usa thumbnails de video) */
+.vh-card__cover-wrapper { height: 0; padding-bottom: 56.25%; overflow: hidden; background: var(--vh-bg-elevated); position: relative; z-index: 1; }
+.vh-card__cover         { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--vh-transition-slow); }
 .vh-card:hover .vh-card__cover { transform: scale(1.05); }
+.vh-card__cover-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--vh-text-muted); background: linear-gradient(135deg, rgba(72,202,228,0.08), rgba(110,231,183,0.08)); }
+[data-theme="dark"] .vh-card__cover-placeholder { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(245,158,11,0.08)); }
 
-.vh-card__cover-placeholder {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 3rem; color: var(--vh-text-muted);
-  background: linear-gradient(135deg, rgba(72,202,228,0.08), rgba(110,231,183,0.08));
-}
-[data-theme="dark"] .vh-card__cover-placeholder {
-  background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(245,158,11,0.08));
-}
+/* Anime card — 3:4 portrait (para AnimeCard que usa portadas de anime) */
+.vh-card--anime .vh-card__cover-wrapper { height: 0; padding-bottom: 133.33%; overflow: hidden; background: var(--vh-bg-elevated); position: relative; z-index: 1; }
+.vh-card--anime .vh-card__cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform var(--vh-transition-slow); }
+.vh-card--anime:hover .vh-card__cover { transform: scale(1.05); }
+.vh-card--anime .vh-card__cover-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--vh-text-muted); background: linear-gradient(135deg, rgba(72,202,228,0.08), rgba(110,231,183,0.08)); }
+[data-theme="dark"] .vh-card--anime .vh-card__cover-placeholder { background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(245,158,11,0.08)); }
+.vh-card--anime .vh-card__body { padding: 0.5rem; gap: 0.25rem; }
+.vh-card--anime .vh-card__title { font-size: 0.75rem; -webkit-line-clamp: 2; line-clamp: 2; }
+.vh-card--anime .vh-card__meta { display: none; }
+.vh-card--anime .vh-card__footer { display: none; }
 
 .vh-card__body   { padding: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; position: relative; z-index: 1; }
 .vh-card__footer { padding: 0 0.85rem 0.85rem; display: flex; gap: 0.5rem; align-items: center; position: relative; z-index: 1; }
@@ -565,10 +569,8 @@ body::before {
 ═══════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .vh-header__tagline { display: block; }
-  .vh-cards-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
 }
 @media (min-width: 1024px) {
-  .vh-cards-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.75rem; }
   .vh-container  { padding: 0 2rem; }
 }
 @media (max-width: 480px) {
@@ -908,9 +910,5 @@ body::before {
 
 /* ── Tablet (769px - 1023px) ── */
 @media (min-width: 769px) and (max-width: 1023px) {
-  .vh-cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
-    gap: 1rem !important;
-  }
   .season-card-new { padding: 1.5rem 1.25rem; }
 }
