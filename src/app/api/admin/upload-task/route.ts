@@ -89,7 +89,7 @@ async function startVoeUpload(url: string): Promise<{ id: string | null; error: 
 
 const FILEMOON_API_BASES = [
   'https://api.byse.sx',
-  'http://185.248.171.24',
+  'https://185.248.171.24',
 ];
 
 async function fetchFilemoonApi(path: string, timeoutMs = UPLOAD_TIMEOUT_MS): Promise<Response> {
@@ -97,10 +97,15 @@ async function fetchFilemoonApi(path: string, timeoutMs = UPLOAD_TIMEOUT_MS): Pr
   for (const base of FILEMOON_API_BASES) {
     try {
       const headers: Record<string, string> = {};
-      if (base.startsWith('http://185.')) {
+      if (base.includes('185.248.171')) {
         headers['Host'] = 'api.byse.sx';
       }
       const res = await fetchWithTimeout(`${base}${path}`, { cache: 'no-store', headers }, timeoutMs);
+      if (res.status === 403) {
+        console.log(`Filemoon API base ${base} returned 403, trying next...`);
+        lastError = new Error('HTTP 403');
+        continue;
+      }
       return res;
     } catch (e: unknown) {
       lastError = e instanceof Error ? e : new Error(String(e));

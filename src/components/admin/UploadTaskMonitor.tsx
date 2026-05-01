@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type TaskStatus = 'pending' | 'processing' | 'done' | 'error';
@@ -57,20 +57,25 @@ export function UploadTaskMonitor({ initialTasks }: Props) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const router = useRouter();
 
-  // Auto-refresh cada 30 segundos si hay tareas en procesamiento
-  useEffect(() => {
-    const hasActive = tasks.some(t => t.status === 'processing' || t.status === 'pending');
-    if (!hasActive) return;
 
-    const interval = setInterval(refresh, 30000);
-    return () => clearInterval(interval);
-  }, [tasks]);
 
   async function refresh() {
     setLoading(true);
-    const res  = await fetch('/api/admin/upload-task');
-    const data = await res.json();
-    setTasks(data);
+    try {
+      const activeTasks = tasks.filter(t => t.status === 'processing' || t.status === 'pending');
+      if (activeTasks.length > 0) {
+        await fetch('/api/admin/upload-task/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskIds: activeTasks.map(t => t.id) }),
+        });
+      }
+      const res = await fetch('/api/admin/upload-task');
+      const data = await res.json();
+      setTasks(data);
+    } catch (error) {
+      console.error('Error refreshing tasks:', error);
+    }
     setLoading(false);
     router.refresh();
   }
@@ -137,7 +142,7 @@ export function UploadTaskMonitor({ initialTasks }: Props) {
             fontFamily: 'inherit',
           }}
         >
-          {loading ? '⏳' : '🔄'} Actualizar
+          {loading ? '⏳' : '🔄'} Verificar
         </button>
       </div>
 
