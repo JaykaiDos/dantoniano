@@ -45,9 +45,16 @@ export function AnimeCard({ anime }: Props) {
         </div>
       </a>
 
-      {/* Body — solo título debajo de la imagen */}
-      <div className="vh-card__body">
+      {/* Body — título + botón */}
+      <div className="vh-card__body" style={{ padding: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
         <h3 className="vh-card__title">{anime.title}</h3>
+        <a
+          href={`/animes/${anime.id}`}
+          className="vh-btn vh-btn--primary"
+          style={{ fontSize: '0.72rem', padding: '0.3rem 0.6rem', textAlign: 'center', textDecoration: 'none' }}
+        >
+          ▶ Ver reacciones
+        </a>
       </div>
     </article>
   );
