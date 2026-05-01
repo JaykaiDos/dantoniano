@@ -16,7 +16,7 @@ interface WatchAnime {
   id: string;
   title: string;
   cover_url: string | null;
-  personal_status: string | null;
+  personal_status: 'pendiente' | 'viendo' | 'completado' | 'dropeado' | null;
   personal_score: number | null;
   genres: string[];
   season: { id: string; name: string; slug: string; emoji: string } | null;
