@@ -4,6 +4,7 @@
  */
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { YouTubeBell } from '@/components/ui/YouTubeBell';
 
 export function Header() {
   return (
@@ -23,6 +24,7 @@ export function Header() {
 
           {/* Controles */}
           <div className="vh-header__controls">
+            <YouTubeBell />
             <ThemeToggle />
           </div>
         </div>
