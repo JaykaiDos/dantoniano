@@ -25,7 +25,7 @@ export default async function HomePage() {
 
   const seasonsNorm = (seasons ?? []).map(s => ({
     ...s,
-    anime_count: (s.anime_count as any)?.[0]?.count ?? 0,
+    anime_count: (s.anime_count as { count: number }[])?.[0]?.count ?? 0,
   }));
 
   const totalAnimes = stats?.length ?? 0;
@@ -109,27 +109,30 @@ export default async function HomePage() {
 
           {/* ── Últimas reacciones ── */}
           {recentReactions && recentReactions.length > 0 && (
-            <section>
-              <div className="vh-section-header">
-                <div>
-                  <h3 className="vh-section-title">Últimas reacciones ▶</h3>
-                  <p className="vh-section-subtitle">Lo más reciente del canal</p>
+            <div className="vh-reactions-box">
+              <section>
+                <div className="vh-section-header">
+                  <div>
+                    <h3 className="vh-section-title">Últimas reacciones ▶</h3>
+                    <p className="vh-section-subtitle">Lo más reciente del canal</p>
+                  </div>
                 </div>
-              </div>
-              <div className="vh-cards-grid" style={{
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-              }}>
-                {recentReactions.map(r => (
-                  <ReactionCard
-                    key={r.id}
-                    reaction={{
-                      ...r,
-                      anime_cover: (r.anime as any)?.cover_url ?? undefined,
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
+                <div className="vh-cards-grid" style={{
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                }}>
+                  {recentReactions.map(r => (
+                    <ReactionCard
+                      key={r.id}
+                      reaction={{
+                        ...r,
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        anime_cover: (r.anime as any)?.cover_url ?? undefined,
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
+            </div>
           )}
 
         </div>

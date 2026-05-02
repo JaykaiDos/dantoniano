@@ -208,9 +208,6 @@ body::before {
   border-bottom: 1.5px solid var(--vh-border);
   box-shadow:    var(--vh-shadow-md);
   padding:       1.25rem 0;
-  position:      sticky;
-  top:           0;
-  z-index:       100;
   transition:    background var(--vh-transition-slow), border-color var(--vh-transition-slow);
 }
 .vh-header__inner   { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
@@ -387,6 +384,18 @@ body::before {
 .vh-card__meta   { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.35rem; }
 .vh-card__ep     { font-size: 0.78rem; color: var(--vh-accent); font-weight: 600; }
 .vh-card__year   { font-size: 0.78rem; color: var(--vh-text-muted); }
+
+/* ═══════════════════════════════════════════════════════════
+   REACTIONS SECTION (Home)
+╒══════════════════════════════════════════════════════════════ */
+.vh-reactions-box {
+  background: var(--vh-bg-card);
+  border: 1.5px solid var(--vh-border-card);
+  border-radius: var(--vh-radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--vh-shadow-md);
+}
+.vh-reactions-box .vh-section-header { margin-bottom: 1rem; }
 
 /* ═══════════════════════════════════════════════════════════
    SECTION HEADER
