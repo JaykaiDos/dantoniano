@@ -15,6 +15,7 @@ export function YouTubeBell() {
   const [video, setVideo] = useState<VideoInfo | null>(null);
   const [hasNew, setHasNew] = useState(false);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,6 +33,8 @@ export function YouTubeBell() {
         }
       } catch (e) {
         console.error('Error fetching notifications:', e);
+      } finally {
+        setLoading(false);
       }
     }
     check();
@@ -110,7 +113,12 @@ export function YouTubeBell() {
           }}>
             Notificaciones
           </div>
-          {video ? (
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
+              <div style={{ marginBottom: '0.5rem' }}>⏳</div>
+              Cargando...
+            </div>
+          ) : video ? (
             <div style={{ padding: '1rem' }}>
               <a
                 href={video.url}
@@ -149,7 +157,7 @@ export function YouTubeBell() {
           ) : (
             <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
               <div style={{ marginBottom: '0.5rem' }}>🔕</div>
-              Cargando notificaciones...
+              No hay notificaciones nuevas.
             </div>
           )}
         </div>
