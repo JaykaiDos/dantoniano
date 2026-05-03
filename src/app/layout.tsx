@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { DM_Sans, Playfair_Display, Roboto_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { OneSignalProvider } from '@/components/providers/OneSignalProvider';
+import Script from 'next/script';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -65,12 +66,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* OneSignal SDK v16 */}
+        {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
         <script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          defer
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+          }}
         />
-        <script
+      </head>
+      <body className={`${dmSans.variable} ${playfair.variable} ${robotoMono.variable}`}>
+        {/* OneSignal SDK v16 */}
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="onesignal-init"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -82,15 +94,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
-          }}
-        />
-      </head>
-      <body className={`${dmSans.variable} ${playfair.variable} ${robotoMono.variable}`}>
         <OneSignalProvider>{children}</OneSignalProvider>
         <Analytics /> {/* ← Vercel Analytics: registra visitas en producción */}
       </body>
