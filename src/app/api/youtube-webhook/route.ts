@@ -11,9 +11,11 @@ function parseYouTubeFeed(xml: string) {
   const idMatch = entry.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
   const titleMatch = entry.match(/<title>([^<]+)<\/title>/);
   const publishedMatch = entry.match(/<published>([^<]+)<\/published>/);
+  const channelMatch = xml.match(/<author>[\s\S]*?<name>([^<]+)<\/name>/);
   const linkMatch = entry.match(/href="([^"]+)"/);
   if (!idMatch) return null;
   return {
+    channel_id: channelMatch?.[1] ?? 'unknown',
     video_id: idMatch[1],
     title: titleMatch?.[1] ?? 'Nuevo video',
     published_at: publishedMatch?.[1] ?? new Date().toISOString(),
@@ -32,25 +34,29 @@ export async function GET(req: NextRequest) {
     return new NextResponse(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
 
-  // 2. Cliente pide el último video (de cualquier canal)
+  // 2. Cliente pide los últimos videos
+  const limitParam = req.nextUrl.searchParams.get('limit');
+  const limit = limitParam ? parseInt(limitParam, 10) : 3;
+
   const supabase = createClient(supabaseUrl, supabaseKey);
-  const { data, error } = await supabase
+  let query = supabase
     .from('youtube_notifications')
     .select('*')
-    .order('published_at', { ascending: false })
-    .limit(1)
-    .single();
+    .order('published_at', { ascending: false });
+
+  const { data, error } = await query;
 
   if (error || !data) {
-    return NextResponse.json({ video: null });
+    return NextResponse.json({ videos: [] });
   }
 
-  return NextResponse.json({
-    video: {
-      ...data,
-      url: `https://www.youtube.com/watch?v=${data.video_id}`,
-    },
-  });
+  // Devolver solo los últimos N videos
+  const latestVideos = data.slice(0, limit).map((video) => ({
+    ...video,
+    url: `https://www.youtube.com/watch?v=${video.video_id}`,
+  }));
+
+  return NextResponse.json({ videos: latestVideos });
 }
 
 // POST: YouTube notifica nuevo video
@@ -61,15 +67,11 @@ export async function POST(req: NextRequest) {
 
     if (videoData) {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Extraer channel_id del XML (si está disponible)
-      const channelMatch = body.match(/<author>[\s\S]*?<name>([^<]+)<\/name>/);
-      const channel_id = channelMatch?.[1] ?? 'unknown';
 
-      // Insertar o ignorar si ya existe
-      await supabase.from('youtube_notifications').upsert(
+      // Insertar o ignorar si ya existe (unique constraint en channel_id + video_id)
+      const { error } = await supabase.from('youtube_notifications').upsert(
         {
-          channel_id,
+          channel_id: videoData.channel_id,
           video_id: videoData.video_id,
           title: videoData.title,
           published_at: videoData.published_at,
@@ -77,7 +79,11 @@ export async function POST(req: NextRequest) {
         { onConflict: 'channel_id,video_id' }
       );
 
-      console.log(`🔔 Nuevo video de ${channel_id}: ${videoData.title}`);
+      if (error) {
+        console.error('Error al guardar notificación:', error.message);
+      } else {
+        console.log(`🔔 Nuevo video de ${videoData.channel_id}: ${videoData.title}`);
+      }
     }
 
     return NextResponse.json({ ok: true });

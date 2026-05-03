@@ -11,8 +11,6 @@ interface VideoInfo {
 }
 
 const STORAGE_KEY = 'yt_last_seen_video_id';
-
-// Canales a monitorear
 const CHANNELS = [
   { id: 'UC-q98369P9K3P6-G_Z4I-fA', name: 'Principal' },
   { id: 'UCf6vV_j6tLgJq_mZ8_O-K7A', name: 'Clips' },
@@ -20,7 +18,8 @@ const CHANNELS = [
 ];
 
 export function YouTubeBell() {
-  const [video, setVideo] = useState<VideoInfo | null>(null);
+  // Ahora es un array para soportar múltiples videos
+  const [videos, setVideos] = useState<VideoInfo[]>([]);
   const [hasNew, setHasNew] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -29,13 +28,18 @@ export function YouTubeBell() {
   useEffect(() => {
     async function check() {
       try {
-        const res = await fetch('/api/youtube-webhook');
+        // Pedimos los últimos 3 videos (uno por canal aprox)
+        const res = await fetch('/api/youtube-webhook?limit=3');
         const data = await res.json();
-        const latest = data.video;
-        if (latest) {
-          setVideo(latest);
+        const latestVideos = data.videos || (data.video ? [data.video] : []);
+        
+        if (latestVideos.length > 0) {
+          setVideos(latestVideos);
+          
+          // Comprobar si ALGUNO de los videos es nuevo
           const lastSeen = localStorage.getItem(STORAGE_KEY);
-          if (latest.video_id !== lastSeen) {
+          const newestVideo = latestVideos[0]; // El más reciente de todos
+          if (newestVideo && newestVideo.video_id !== lastSeen) {
             setHasNew(true);
           }
         }
@@ -61,8 +65,9 @@ export function YouTubeBell() {
   }, []);
 
   function handleClick() {
-    if (hasNew && video) {
-      localStorage.setItem(STORAGE_KEY, video.video_id);
+    if (hasNew && videos.length > 0) {
+      // Marcar como visto el más reciente
+      localStorage.setItem(STORAGE_KEY, videos[0].video_id);
       setHasNew(false);
     }
     setOpen(!open);
@@ -103,7 +108,7 @@ export function YouTubeBell() {
           position: 'absolute',
           top: 52,
           right: 0,
-          width: 320,
+          width: 340,
           background: 'var(--vh-bg-card)',
           backdropFilter: 'var(--vh-glass-blur)',
           border: '1.5px solid var(--vh-border-card)',
@@ -111,6 +116,9 @@ export function YouTubeBell() {
           boxShadow: 'var(--vh-shadow-lg)',
           zIndex: 1000,
           overflow: 'hidden',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column',
         }}>
           <div style={{
             padding: '0.75rem 1rem',
@@ -121,6 +129,7 @@ export function YouTubeBell() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}>
             <span>Notificaciones</span>
             <span style={{
@@ -135,62 +144,72 @@ export function YouTubeBell() {
               {CHANNELS.length} canales
             </span>
           </div>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
-              <div style={{ marginBottom: '0.5rem' }}>⏳</div>
-              Cargando...
-            </div>
-          ) : video ? (
-            <div style={{ padding: '1rem' }}>
-              <div style={{
-                fontSize: '0.7rem',
-                color: 'var(--vh-text-muted)',
-                marginBottom: '0.5rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-              }}>
-                📺 Último video
+          
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
+                <div style={{ marginBottom: '0.5rem' }}>⏳</div>
+                Cargando...
               </div>
-              <a
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-              >
-                <div style={{
-                  fontSize: '0.82rem', fontWeight: 600,
-                  color: 'var(--vh-text-primary)',
-                  lineHeight: 1.35,
-                  marginBottom: '0.35rem',
-                }}>
-                  🎬 {video.title}
-                </div>
-                <div style={{
-                  fontSize: '0.72rem', color: 'var(--vh-text-muted)',
-                  marginBottom: '0.75rem',
-                }}>
-                  {new Date(video.published_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </div>
-              </a>
-              <a
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="vh-btn vh-btn--primary"
-                style={{
-                  width: '100%', textAlign: 'center', textDecoration: 'none',
-                  fontSize: '0.82rem', padding: '0.45rem 0.75rem', display: 'block',
-                }}
-              >
-                ▶ Ver en YouTube
-              </a>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
-              <div style={{ marginBottom: '0.5rem' }}>🔕</div>
-              No hay notificaciones nuevas.
-            </div>
-          )}
+            ) : videos.length > 0 ? (
+              <div style={{ padding: '0.5rem' }}>
+                {videos.map((video, idx) => (
+                  <div key={video.video_id} style={{
+                    padding: '0.75rem',
+                    borderBottom: idx !== videos.length - 1 ? '1px solid var(--vh-border)' : 'none',
+                  }}>
+                    <a
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                    >
+                      <div style={{
+                        fontSize: '0.7rem',
+                        color: 'var(--vh-accent)',
+                        marginBottom: '0.25rem',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                      }}>
+                        {video.channel_id === CHANNELS[0].id ? 'Principal' : video.channel_id === CHANNELS[1].id ? 'Clips' : 'Secundario'}
+                      </div>
+                      <div style={{
+                        fontSize: '0.82rem', fontWeight: 600,
+                        color: 'var(--vh-text-primary)',
+                        lineHeight: 1.35,
+                        marginBottom: '0.35rem',
+                      }}>
+                        🎬 {video.title}
+                      </div>
+                      <div style={{
+                        fontSize: '0.72rem', color: 'var(--vh-text-muted)',
+                        marginBottom: '0.5rem',
+                      }}>
+                        {new Date(video.published_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                    </a>
+                    <a
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="vh-btn vh-btn--primary"
+                      style={{
+                        width: '100%', textAlign: 'center', textDecoration: 'none',
+                        fontSize: '0.75rem', padding: '0.35rem 0.6rem', display: 'block',
+                      }}
+                    >
+                      ▶ Ver video
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
+                <div style={{ marginBottom: '0.5rem' }}>🔕</div>
+                No hay notificaciones nuevas.
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
