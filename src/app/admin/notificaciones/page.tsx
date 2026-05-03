@@ -253,6 +253,7 @@ export default async function NotificationsPage() {
       <div style={{ marginTop: '1.5rem' }}>
         <Link
           href="/admin"
+          className="vh-btn vh-btn--ghost"
           style={{
             color: 'var(--vh-accent)',
             textDecoration: 'none',
@@ -265,14 +266,6 @@ export default async function NotificationsPage() {
             borderRadius: 'var(--vh-radius-md)',
             background: 'var(--vh-accent-soft)',
             transition: 'all var(--vh-transition)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--vh-accent)';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--vh-accent-soft)';
-            e.currentTarget.style.color = 'var(--vh-accent)';
           }}
         >
           ← Volver al dashboard
