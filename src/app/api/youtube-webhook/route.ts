@@ -21,38 +21,65 @@ function parseYouTubeFeed(xml: string) {
   };
 }
 
+// GET: Verificación de PubSubHubbub Y consulta del cliente
 export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get('hub.mode');
   const challenge = req.nextUrl.searchParams.get('hub.challenge');
+
+  // 1. Verificación de suscripción (Google PubSubHubbub)
   if (mode === 'subscribe' && challenge) {
     console.log('✅ Suscripción verificada con YouTube');
     return new NextResponse(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
+
+  // 2. Cliente pide el último video (de cualquier canal)
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data, error } = await supabase
     .from('youtube_notifications')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('published_at', { ascending: false })
     .limit(1)
     .single();
+
   if (error || !data) {
     return NextResponse.json({ video: null });
   }
-  return NextResponse.json({ video: { ...data, url: `https://www.youtube.com/watch?v=${data.video_id}`, } });
+
+  return NextResponse.json({
+    video: {
+      ...data,
+      url: `https://www.youtube.com/watch?v=${data.video_id}`,
+    },
+  });
 }
 
+// POST: YouTube notifica nuevo video
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
     const videoData = parseYouTubeFeed(body);
+
     if (videoData) {
       const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Extraer channel_id del XML (si está disponible)
+      const channelMatch = body.match(/<author>[\s\S]*?<name>([^<]+)<\/name>/);
+      const channel_id = channelMatch?.[1] ?? 'unknown';
+
+      // Insertar o ignorar si ya existe
       await supabase.from('youtube_notifications').upsert(
-        { video_id: videoData.video_id, title: videoData.title, published_at: videoData.published_at },
-        { onConflict: 'video_id' }
+        {
+          channel_id,
+          video_id: videoData.video_id,
+          title: videoData.title,
+          published_at: videoData.published_at,
+        },
+        { onConflict: 'channel_id,video_id' }
       );
-      console.log(`🔔 Nuevo video guardado: ${videoData.title}`);
+
+      console.log(`🔔 Nuevo video de ${channel_id}: ${videoData.title}`);
     }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Error procesando webhook:', error);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 interface VideoInfo {
+  channel_id: string;
   video_id: string;
   title: string;
   published_at: string;
@@ -10,6 +11,13 @@ interface VideoInfo {
 }
 
 const STORAGE_KEY = 'yt_last_seen_video_id';
+
+// Canales a monitorear
+const CHANNELS = [
+  { id: 'UC-q98369P9K3P6-G_Z4I-fA', name: 'Principal' },
+  { id: 'UCf6vV_j6tLgJq_mZ8_O-K7A', name: 'Clips' },
+  { id: 'UCnDO8cR8PLPitCoEa1VyEJw', name: 'Secundario' },
+];
 
 export function YouTubeBell() {
   const [video, setVideo] = useState<VideoInfo | null>(null);
@@ -95,7 +103,7 @@ export function YouTubeBell() {
           position: 'absolute',
           top: 52,
           right: 0,
-          width: 300,
+          width: 320,
           background: 'var(--vh-bg-card)',
           backdropFilter: 'var(--vh-glass-blur)',
           border: '1.5px solid var(--vh-border-card)',
@@ -110,8 +118,22 @@ export function YouTubeBell() {
             fontSize: '0.78rem', fontWeight: 700,
             color: 'var(--vh-text-secondary)',
             textTransform: 'uppercase', letterSpacing: '0.06em',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}>
-            Notificaciones
+            <span>Notificaciones</span>
+            <span style={{
+              background: 'var(--vh-accent-soft)',
+              color: 'var(--vh-accent)',
+              border: '1px solid var(--vh-border)',
+              borderRadius: 'var(--vh-radius-full)',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              padding: '0.1rem 0.4rem',
+            }}>
+              {CHANNELS.length} canales
+            </span>
           </div>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--vh-text-muted)', fontSize: '0.82rem' }}>
@@ -120,6 +142,15 @@ export function YouTubeBell() {
             </div>
           ) : video ? (
             <div style={{ padding: '1rem' }}>
+              <div style={{
+                fontSize: '0.7rem',
+                color: 'var(--vh-text-muted)',
+                marginBottom: '0.5rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}>
+                📺 Último video
+              </div>
               <a
                 href={video.url}
                 target="_blank"
