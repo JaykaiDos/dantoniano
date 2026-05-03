@@ -72,24 +72,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
           }}
         />
-        {/* OneSignal SDK v16 - Cargado directamente para evitar CSP issues */}
+        {/* OneSignal SDK v16 */}
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              (function() {
-                if (typeof window === 'undefined') return;
-                window.OneSignalDeferred = window.OneSignalDeferred || [];
-                var script = document.createElement('script');
-                script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-                script.async = true;
-                script.defer = true;
-                document.head.appendChild(script);
-                window.OneSignalDeferred.push(async function(OneSignal) {
-                  await OneSignal.init({
-                    appId: "83c2821e-8e68-4e91-9bd2-63e463c36e27",
-                  });
+              window.OneSignalDeferred = window.OneSignalDeferred || [];
+              OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.init({
+                  appId: "83c2821e-8e68-4e91-9bd2-63e463c36e27",
                 });
-              })();
+              });
             `,
           }}
         />
