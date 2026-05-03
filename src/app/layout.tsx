@@ -4,6 +4,7 @@
 import type { Metadata } from 'next';
 import { DM_Sans, Playfair_Display, Roboto_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
+import { OneSignalProvider } from '@/components/providers/OneSignalProvider';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -64,6 +65,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
+        {/* OneSignal SDK v16 - Solo en producción */}
+        {process.env.NODE_ENV === 'production' && (
+          <>
+            <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  window.OneSignalDeferred = window.OneSignalDeferred || [];
+                  OneSignalDeferred.push(async function(OneSignal) {
+                    await OneSignal.init({
+                      appId: "83c2821e-8e68-4e91-9bd2-63e463c36e27",
+                    });
+                  });
+                `,
+              }}
+            />
+          </>
+        )}
         {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
         <script
           suppressHydrationWarning
@@ -73,7 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${dmSans.variable} ${playfair.variable} ${robotoMono.variable}`}>
-        {children}
+        <OneSignalProvider>{children}</OneSignalProvider>
         <Analytics /> {/* ← Vercel Analytics: registra visitas en producción */}
       </body>
     </html>

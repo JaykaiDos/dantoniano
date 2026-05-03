@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { MainNav } from '@/components/layout/MainNav';
 import { SeasonCard } from '@/components/ui/SeasonCard';
 import { ReactionCard } from '@/components/ui/ReactionCard';
+import { GlobalSubscribeButton } from '@/components/ui/GlobalSubscribeButton';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -64,8 +65,11 @@ export default async function HomePage() {
               maxWidth: '520px', margin: '0 auto 2rem', lineHeight: 1.6,
             }}>
               Todas las reacciones de anime organizadas por temporada.
-            </p>
-            <div className="vh-hero-stats" style={{
+        </p>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <GlobalSubscribeButton />
+        </div>
+        <div className="vh-hero-stats" style={{
               display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap',
             }}>
               {[
