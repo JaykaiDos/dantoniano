@@ -65,24 +65,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* OneSignal SDK v16 - Solo en producción */}
-        {process.env.NODE_ENV === 'production' && (
-          <>
-            <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.OneSignalDeferred = window.OneSignalDeferred || [];
-                  OneSignalDeferred.push(async function(OneSignal) {
-                    await OneSignal.init({
-                      appId: "83c2821e-8e68-4e91-9bd2-63e463c36e27",
-                    });
-                  });
-                `,
-              }}
-            />
-          </>
-        )}
+        {/* OneSignal SDK v16 */}
+        <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.OneSignalDeferred = window.OneSignalDeferred || [];
+              OneSignalDeferred.push(async function(OneSignal) {
+                await OneSignal.init({
+                  appId: "83c2821e-8e68-4e91-9bd2-63e463c36e27",
+                });
+              });
+            `,
+          }}
+        />
         {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
         <script
           suppressHydrationWarning

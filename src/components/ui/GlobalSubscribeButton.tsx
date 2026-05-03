@@ -6,8 +6,19 @@ import { subscribeToGlobal, getUserTags } from '@/lib/onesignal';
 export function GlobalSubscribeButton() {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [available, setAvailable] = useState(false);
 
   useEffect(() => {
+    // Verificar si OneSignal está disponible
+    const checkAvailability = () => {
+      if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+        setAvailable(true);
+      }
+    };
+    
+    checkAvailability();
+    
+    // Verificar estado de suscripción
     const checkStatus = async () => {
       try {
         const tags = await getUserTags();
@@ -18,13 +29,22 @@ export function GlobalSubscribeButton() {
         setLoading(false);
       }
     };
-    checkStatus();
-  }, []);
+    
+    if (available) {
+      checkStatus();
+    } else {
+      setLoading(false);
+    }
+  }, [available]);
 
   const handleSubscribe = async () => {
     await subscribeToGlobal();
     setSubscribed(true);
   };
+
+  if (!available) {
+    return null; // No mostrar si OneSignal no está disponible
+  }
 
   if (loading) {
     return (

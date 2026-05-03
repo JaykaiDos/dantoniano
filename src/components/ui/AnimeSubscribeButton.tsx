@@ -8,11 +8,24 @@ interface Props {
   animeTitle: string;
 }
 
-export function AnimeSubscribeButton({ animeSlug }: Props) {
+export function AnimeSubscribeButton({ animeSlug, animeTitle }: Props) {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [available, setAvailable] = useState(false);
 
   useEffect(() => {
+    // Verificar si OneSignal está disponible
+    const checkAvailability = () => {
+      if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+        setAvailable(true);
+      }
+    };
+    
+    checkAvailability();
+  }, []);
+
+  useEffect(() => {
+    // Verificar estado de suscripción
     const checkStatus = async () => {
       try {
         const tags = await getUserTags();
@@ -23,8 +36,13 @@ export function AnimeSubscribeButton({ animeSlug }: Props) {
         setLoading(false);
       }
     };
-    checkStatus();
-  }, [animeSlug]);
+    
+    if (available) {
+      checkStatus();
+    } else {
+      setLoading(false);
+    }
+  }, [animeSlug, available]);
 
   const handleToggle = async () => {
     if (subscribed) {
@@ -35,6 +53,10 @@ export function AnimeSubscribeButton({ animeSlug }: Props) {
       setSubscribed(true);
     }
   };
+
+  if (!available) {
+    return null; // No mostrar si OneSignal no está disponible
+  }
 
   if (loading) {
     return (
