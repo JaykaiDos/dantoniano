@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { MainNav } from '@/components/layout/MainNav';
 import { SeasonCard } from '@/components/ui/SeasonCard';
 import { ReactionCard } from '@/components/ui/ReactionCard';
+import { FirebaseSubscribeButton } from '@/components/ui/FirebaseSubscribeButton';
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -59,13 +60,19 @@ export default async function HomePage() {
                 xdantonioxd21
               </span>
             </h2>
-            <p style={{
-              color: 'var(--vh-text-secondary)', fontSize: '1rem',
-              maxWidth: '520px', margin: '0 auto 2rem', lineHeight: 1.6,
-            }}>
-              Todas las reacciones de anime organizadas por temporada.
-            </p>
-            <div className="vh-hero-stats" style={{
+        <p style={{
+          color: 'var(--vh-text-secondary)',
+          fontSize: '1rem',
+          maxWidth: '520px',
+          margin: '0 auto 2rem',
+          lineHeight: 1.6,
+        }}>
+          Todas las reacciones de anime organizadas por temporada.
+        </p>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <FirebaseSubscribeButton />
+        </div>
+        <div className="vh-hero-stats" style={{
               display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap',
             }}>
               {[

@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { MainNav } from '@/components/layout/MainNav';
 import { ReactionCard } from '@/components/ui/ReactionCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { FirebaseAnimeSubscribeButton } from '@/components/ui/FirebaseAnimeSubscribeButton';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -161,24 +162,29 @@ export default async function AnimeDetailPage({ params }: Props) {
 
             {/* ── Columna derecha: título + sinopsis ── */}
             <div style={{ minWidth: 0 }}>
-              <h1 style={{
-                fontFamily: 'var(--font-playfair, Georgia, serif)',
-                fontSize: 'clamp(1.3rem, 3vw, 1.8rem)',
-                fontWeight: 700,
-                color: 'var(--vh-text-primary)',
-                lineHeight: 1.2,
-                marginBottom: '0.2rem',
-              }}>
-                {anime.title}
-              </h1>
-              {anime.title_jp && (
-                <p style={{
-                  fontSize: '0.875rem', color: 'var(--vh-text-muted)',
-                  marginBottom: '1rem', fontStyle: 'italic',
-                }}>
-                  {anime.title_jp}
-                </p>
-              )}
+  <h1 style={{
+    fontFamily: 'var(--font-playfair, Georgia, serif)',
+    fontSize: 'clamp(1.3rem, 3vw, 1.8rem)',
+    fontWeight: 700,
+    color: 'var(--vh-text-primary)',
+    lineHeight: 1.2,
+    marginBottom: '0.2rem',
+  }}>
+    {anime.title}
+  </h1>
+  <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+    <FirebaseAnimeSubscribeButton animeSlug={anime.slug} animeTitle={anime.title} />
+  </div>
+  {anime.title_jp && (
+    <p style={{
+      fontSize: '0.875rem',
+      color: 'var(--vh-text-muted)',
+      marginBottom: '1rem',
+      fontStyle: 'italic',
+    }}>
+      {anime.title_jp}
+    </p>
+  )}
 
               {/* Sinopsis */}
               {anime.synopsis && (
