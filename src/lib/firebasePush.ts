@@ -86,9 +86,43 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
 
       // 4. Registrar Service Worker
       try {
-        console.log('🔧 [FCM] Registrando Service Worker...');
-        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('🔧 [FCM] Intentando registrar Service Worker en /firebase-messaging-sw.js...');
+        
+        // Verificar si el archivo existe
+        const swUrl = '/firebase-messaging-sw.js';
+        console.log('🔍 [FCM] Verificando existencia del SW:', swUrl);
+        
+        const checkResponse = await fetch(swUrl, { method: 'HEAD' });
+        console.log('🔍 [FCM] Response status:', checkResponse.status);
+        
+        if (!checkResponse.ok) {
+          console.error('❌ [FCM] El archivo firebase-messaging-sw.js no existe (404)');
+          throw new Error('Service Worker no encontrado (404)');
+        }
+        
+        const registration = await navigator.serviceWorker.register(swUrl, {
+          scope: '/',
+          type: 'module', // Importante para Firebase v10+
+          updateViaCache: 'none'
+        });
+        
         console.log('✅ [FCM] Service Worker registrado:', registration.scope);
+        console.log('📋 [FCM] Service Worker state:', registration.active?.state || 'activating');
+        
+        // Esperar a que el SW esté activo
+        if (registration.active) {
+          console.log('✅ [FCM] Service Worker ya está activo');
+        } else if (registration.installing) {
+          console.log('⏳ [FCM] Esperando a que el SW se active...');
+          await new Promise((resolve) => {
+            registration.installing?.addEventListener('statechange', (e) => {
+              console.log('📋 [FCM] SW state change:', (e.target as any)?.state);
+              if ((e.target as any)?.state === 'activated') {
+                resolve(true);
+              }
+            });
+          });
+        }
         
         // 5. Obtener token
         if (messaging) {
@@ -101,15 +135,23 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
           return token;
         } else {
           console.error('❌ [FCM] messaging es null después de registrar SW');
+          throw new Error('Messaging no disponible');
         }
       } catch (swError) {
         console.error('❌ [FCM] Error al registrar Service Worker:', swError);
+        console.error('📋 [FCM] Error details:', {
+          name: (swError as Error).name,
+          message: (swError as Error).message,
+          stack: (swError as Error).stack
+        });
         
-        // Fallback para localhost
+        // En producción, NO hay fallback - el error es real
         if (isLocalhost) {
           console.log('🔧 [FCM] Modo desarrollo: usando token fake');
           return generateFakeToken();
         }
+        
+        throw swError; // Re-lanzar para que el hook lo capture
       }
     }
     
