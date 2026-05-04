@@ -66,6 +66,9 @@ export function FirebaseSubscribeButton() {
 
   // Mostrar error si existe
   if (error || localError) {
+    const errorMsg = error || localError;
+    const isPermissionDenied = errorMsg?.toLowerCase().includes('denied') || errorMsg?.toLowerCase().includes('bloqueado');
+    
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
         <button
@@ -73,11 +76,19 @@ export function FirebaseSubscribeButton() {
           onClick={handleToggle}
           style={{ cursor: 'pointer' }}
         >
-          ⚠️ Error - Reintentar
+          ⚠️ {isPermissionDenied ? 'Permisos bloqueados' : 'Error - Reintentar'}
         </button>
-        {(error || localError) && (
-          <small style={{ color: 'var(--vh-error)', fontSize: '0.75rem', maxWidth: '300px', textAlign: 'center' }}>
-            {error || localError}
+        {errorMsg && (
+          <small style={{ 
+            color: 'var(--vh-error)', 
+            fontSize: '0.75rem', 
+            maxWidth: '300px', 
+            textAlign: 'center',
+            lineHeight: 1.4
+          }}>
+            {isPermissionDenied 
+              ? "Las notificaciones están bloqueadas. Actívalas en la configuración de tu navegador para este sitio." 
+              : errorMsg}
           </small>
         )}
       </div>
