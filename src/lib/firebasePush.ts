@@ -2,239 +2,81 @@ import { messaging } from './firebase';
 import { getToken, onMessage, deleteToken } from 'firebase/messaging';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '';
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-// Verificar si estamos en localhost (desarrollo)
-const isLocalhost = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || 
-   window.location.hostname === '127.0.0.1' ||
-   window.location.hostname === '');
+const generateFakeToken = () => `fake-token-${Date.now()}`;
 
-/**
- * Genera un token falso para testing en localhost
- */
-const generateFakeToken = () => `fake-token-localhost-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-/**
- * Solicita permisos y obtiene el token del usuario
- */
 export const requestNotificationPermission = async (): Promise<string | null> => {
-  console.log('🔍 [FCM] Iniciando solicitud de permisos...');
+  console.log('🔍 [FCM] Iniciando...');
   
-  if (typeof window === 'undefined') {
-    console.error('❌ [FCM] window no está definido');
-    return null;
-  }
-
+  if (typeof window === 'undefined') return null;
   if (!('serviceWorker' in navigator)) {
-    console.error('❌ [FCM] Service Workers no soportados en este navegador');
+    console.error('❌ [FCM] No soportado');
     return null;
   }
 
   try {
-    // 1. Verificar permisos actuales
     const permission = Notification.permission;
-    console.log(`🔍 [FCM] Permiso actual: ${permission}`);
+    console.log(`🔍 [FCM] Permiso: ${permission}`);
     
     if (permission === 'denied') {
-      console.error('❌ [FCM] Permiso denegado por el usuario');
+      console.error('❌ [FCM] Denegado');
       return null;
     }
 
-    // 2. Si ya está concedido, intentar obtener token
-    if (permission === 'granted') {
-      console.log('✅ [FCM] Permiso ya concedido, obteniendo token...');
-      try {
-        const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-        console.log('🔍 [FCM] Service Worker registration:', registration ? 'Encontrado' : 'No encontrado');
-        
-        if (registration && messaging) {
-          const token = await getToken(messaging, {
-            vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: registration,
-          });
-          console.log('✅ [FCM] Token obtenido:', token);
-          return token;
-        } else {
-          if (!messaging) {
-            console.error('❌ [FCM] messaging es null o undefined');
-          }
-          if (!registration) {
-            console.error('❌ [FCM] No se pudo registrar el Service Worker');
-          }
-        }
-      } catch (error) {
-        console.error('❌ [FCM] Error al obtener token:', error);
-      }
-      
-      // Fallback para localhost
-      if (isLocalhost) {
-        console.log('🔧 [FCM] Modo desarrollo: generando token fake');
-        return generateFakeToken();
-      }
+    // Registrar SW
+    console.log('🔧 [FCM] Registrando SW...');
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
+      type: 'module',
+      updateViaCache: 'none'
+    });
+    
+    console.log('✅ [FCM] SW registrado');
+    
+    if (!messaging) {
+      console.error('❌ [FCM] messaging null');
+      return isLocalhost ? generateFakeToken() : null;
     }
 
-    // 3. Si no está concedido, pedir permiso
-    if (permission !== 'granted') {
-      console.log('🔔 [FCM] Solicitando permiso al usuario...');
-      const newPermission = await Notification.requestPermission();
-      console.log(`🔍 [FCM] Nueva permiso: ${newPermission}`);
-      
-      if (newPermission !== 'granted') {
-        console.error('❌ [FCM] Usuario denegó el permiso');
-        return null;
-      }
-
-      // 4. Registrar Service Worker
-      try {
-        console.log('🔧 [FCM] Intentando registrar Service Worker en /firebase-messaging-sw.js...');
-        
-        // Verificar si el archivo existe
-        const swUrl = '/firebase-messaging-sw.js';
-        console.log('🔍 [FCM] Verificando existencia del SW:', swUrl);
-        
-        const checkResponse = await fetch(swUrl, { method: 'HEAD' });
-        console.log('🔍 [FCM] Response status:', checkResponse.status);
-        
-        if (!checkResponse.ok) {
-          console.error('❌ [FCM] El archivo firebase-messaging-sw.js no existe (404)');
-          throw new Error('Service Worker no encontrado (404)');
-        }
-        
-        const registration = await navigator.serviceWorker.register(swUrl, {
-          scope: '/',
-          type: 'module', // Importante para Firebase v10+
-          updateViaCache: 'none'
-        });
-        
-        console.log('✅ [FCM] Service Worker registrado:', registration.scope);
-        console.log('📋 [FCM] Service Worker state:', registration.active?.state || 'activating');
-        
-        // Esperar a que el SW esté activo
-        if (registration.active) {
-          console.log('✅ [FCM] Service Worker ya está activo');
-        } else if (registration.installing) {
-          console.log('⏳ [FCM] Esperando a que el SW se active...');
-          await new Promise((resolve) => {
-            registration.installing?.addEventListener('statechange', (e) => {
-              console.log('📋 [FCM] SW state change:', (e.target as any)?.state);
-              if ((e.target as any)?.state === 'activated') {
-                resolve(true);
-              }
-            });
-          });
-        }
-        
-        // 5. Obtener token
-        if (messaging) {
-          console.log('🔧 [FCM] Obteniendo token de Firebase...');
-          const token = await getToken(messaging, {
-            vapidKey: VAPID_KEY,
-            serviceWorkerRegistration: registration,
-          });
-          console.log('✅ [FCM] Token obtenido:', token);
-          return token;
-        } else {
-          console.error('❌ [FCM] messaging es null después de registrar SW');
-          throw new Error('Messaging no disponible');
-        }
-      } catch (swError) {
-        console.error('❌ [FCM] Error al registrar Service Worker:', swError);
-        console.error('📋 [FCM] Error details:', {
-          name: (swError as Error).name,
-          message: (swError as Error).message,
-          stack: (swError as Error).stack
-        });
-        
-        // En producción, NO hay fallback - el error es real
-        if (isLocalhost) {
-          console.log('🔧 [FCM] Modo desarrollo: usando token fake');
-          return generateFakeToken();
-        }
-        
-        throw swError; // Re-lanzar para que el hook lo capture
-      }
-    }
+    // Obtener token
+    console.log('🔧 [FCM] Obteniendo token...');
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
     
-    // Último fallback para localhost
-    if (isLocalhost) {
-      console.log('🔧 [FCM] Modo desarrollo: token fake de último recurso');
-      return generateFakeToken();
-    }
+    console.log('✅ [FCM] Token:', token ? token.substring(0, 20) + '...' : 'null');
+    return token;
     
-    console.error('❌ [FCM] No se pudo obtener token por ninguna vía');
-    return null;
   } catch (error) {
-    console.error('❌ [FCM] Error general:', error);
-    // Fallback final para localhost
-    if (isLocalhost) {
-      return generateFakeToken();
-    }
+    console.error('❌ [FCM] Error:', error);
+    if (isLocalhost) return generateFakeToken();
     return null;
   }
 };
 
-/**
- * Escucha mensajes en primer plano
- */
 export const onMessageListener = (callback: (payload: any) => void) => {
-  if (!messaging) {
-    console.warn('⚠️ [FCM] messaging no disponible, no se pueden escuchar mensajes');
-    return () => {};
-  }
-
-  console.log('🔔 [FCM] Escuchando mensajes en primer plano...');
-  const unsubscribe = onMessage(messaging, (payload) => {
-    console.log('📨 [FCM] Mensaje recibido:', payload);
-    callback(payload);
-  });
-  
-  return unsubscribe;
+  if (!messaging) return () => {};
+  return onMessage(messaging, (payload) => callback(payload));
 };
 
-/**
- * Elimina el token del usuario
- */
 export const deleteNotificationToken = async () => {
-  if (!messaging) {
-    console.warn('⚠️ [FCM] messaging no disponible, no se puede eliminar token');
-    return;
-  }
-  
+  if (!messaging) return;
   try {
     await deleteToken(messaging);
-    console.log('✅ [FCM] Token eliminado correctamente');
   } catch (error) {
-    console.error('❌ [FCM] Error al eliminar token:', error);
+    console.error('❌ [FCM] Error:', error);
   }
 };
 
-/**
- * Obtiene el token actual
- */
 export const getCurrentToken = async (): Promise<string | null> => {
-  const permission = Notification.permission;
-  if (permission !== 'granted') {
-    return null;
-  }
-
-  if (!messaging) return null;
-  
+  if (!messaging || Notification.permission !== 'granted') return null;
   try {
     const registration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-    if (!registration) {
-      return isLocalhost ? 'fake-token-localhost-existing' : null;
-    }
-    
-    const token = await getToken(messaging, { 
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: registration 
-    });
-    return token;
-  } catch (error) {
-    console.error('❌ [FCM] Error al obtener token actual:', error);
-    if (isLocalhost) {
-      return 'fake-token-localhost-existing';
-    }
-    return null;
+    if (!registration) return isLocalhost ? 'fake-token' : null;
+    return await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+  } catch {
+    return isLocalhost ? 'fake-token' : null;
   }
 };
