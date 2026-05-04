@@ -19,7 +19,7 @@ export function FirebaseAnimeSubscribeButton({ animeSlug, animeTitle }: Props) {
 
   const [subscribed, setSubscribed] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const topic: `anime:${string}` = `anime:${animeSlug}`;
+  const topic = `anime:${animeSlug}`;
 
   useEffect(() => {
     // Verificar si está suscrito al cargar

@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { requestNotificationPermission, onMessageListener, deleteNotificationToken, getCurrentToken } from '@/lib/firebasePush';
 
 // Tipos de topics disponibles
-export type NotificationTopic = 
-  | 'global'
-  | `anime:${string}`;
+export type NotificationTopic = string;
 
 interface UseFirebasePushOptions {
   defaultTopic?: NotificationTopic;

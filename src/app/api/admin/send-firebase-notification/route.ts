@@ -5,25 +5,34 @@ import { GoogleAuth } from 'google-auth-library';
 // Endpoint para enviar notificaciones push segmentadas
 export async function POST(req: NextRequest) {
   try {
-    const { title, body, url, image, topics } = await req.json();
+    let { title, body, url, image, topics } = await req.json();
 
-    if (!title || !body || !topics || topics.length === 0) {
+    if (!title || !body) {
       return NextResponse.json(
-        { error: 'Título, cuerpo y al menos un topic son requeridos' },
+        { error: 'Título y cuerpo son requeridos' },
         { status: 400 }
       );
     }
 
+    // Normalizar topics a array
+    if (!topics || topics.length === 0) {
+      topics = ['global']; // Por defecto, global
+    } else if (typeof topics === 'string') {
+      topics = [topics];
+    }
+
+    console.log('📩 Enviando notificación:', { title, body, topics, url });
+
     const supabase = createAdminClient();
 
-    // Obtener tokens únicos de los topics seleccionados
+    // Obtener tokens únicos de los topics seleccionados (lógica OR)
     const { data: subscriptions, error: fetchError } = await supabase
       .from('firebase_subscriptions')
       .select('token')
       .in('topic', topics);
 
     if (fetchError || !subscriptions || subscriptions.length === 0) {
-      console.log('No hay suscriptores para estos topics');
+      console.log('⚠️ No hay suscriptores para estos topics:', topics);
       return NextResponse.json({
         success: true,
         message: 'No hay suscriptores',
@@ -41,6 +50,8 @@ export async function POST(req: NextRequest) {
         sent: 0,
       });
     }
+
+    console.log(`📱 Enviando a ${uniqueTokens.length} dispositivos...`);
 
     // Obtener access token de Firebase
     const accessToken = await getFirebaseAccessToken();
@@ -86,10 +97,12 @@ export async function POST(req: NextRequest) {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Error enviando FCM:', errorText);
+          console.error('❌ Error FCM:', errorText);
+        } else {
+          console.log('✅ Token enviado:', token.substring(0, 20) + '...');
         }
       } catch (error) {
-        console.error('Error al enviar notificación:', error);
+        console.error('❌ Error al enviar:', error);
       }
     });
 

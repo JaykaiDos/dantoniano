@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const authError = await checkAuth();
   if (authError) return authError;
 
-  const body     = await req.json();
+  const body = await req.json();
   const supabase = createAdminClient();
 
   // Si no hay thumbnail y hay anime_id, usar la cover del anime
@@ -30,7 +30,71 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabase.from('reactions').insert(body).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // 🚀 ENVIAR NOTIFICACIÓN PUSH (asíncrono, no bloqueante)
+  if (data.anime_id && data.episode_number) {
+    sendPushNotification(data.anime_id, data.episode_number, data.title, data.thumbnail_url)
+      .catch(err => console.error('Error enviando push notification:', err));
+  }
+
   return NextResponse.json(data, { status: 201 });
+}
+
+// Función para enviar notificación push
+async function sendPushNotification(
+  anime_id: string,
+  episode_number: number,
+  episodeTitle: string | null,
+  thumbnail_url: string | null
+) {
+  try {
+    const supabase = createAdminClient();
+    
+    // 1. Obtener datos del anime (título, slug)
+    const { data: anime, error: animeError } = await supabase
+      .from('animes')
+      .select('slug, title')
+      .eq('id', anime_id)
+      .single();
+
+    if (animeError || !anime) {
+      console.error('Error al obtener datos del anime:', animeError);
+      return;
+    }
+
+    const { slug, title: animeTitle } = anime;
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://dantoniano.vercel.app';
+    const url = `${baseUrl}/animes/${slug}#${anime_id}`;
+
+    // 2. Preparar notificación
+    const notificationData = {
+      title: `¡Nuevo Capítulo de ${animeTitle}!`,
+      body: `Episodio ${episode_number}: ${episodeTitle || `Capítulo ${episode_number}`}`,
+      url: url,
+      image: thumbnail_url,
+      topics: [
+        'global', // Todos los suscriptos globalmente
+        `anime:${slug}` // Seguidores de este anime
+      ]
+    };
+
+    // 3. Enviar al endpoint de notificaciones
+    const response = await fetch(`${baseUrl}/api/admin/send-firebase-notification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notificationData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error en send-firebase-notification:', errorText);
+    } else {
+      const result = await response.json();
+      console.log('✅ Notificación push enviada:', result);
+    }
+  } catch (error) {
+    console.error('Error enviando push notification:', error);
+  }
 }
 
 export async function PUT(req: NextRequest) {
@@ -38,7 +102,7 @@ export async function PUT(req: NextRequest) {
   if (authError) return authError;
 
   const { id, ...body } = await req.json();
-  const supabase        = createAdminClient();
+  const supabase = createAdminClient();
 
   // Mismo fix para edición
   if (!body.thumbnail_url && body.anime_id) {
