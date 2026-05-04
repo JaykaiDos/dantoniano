@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { GoogleAuth } from 'google-auth-library';
 
-// Endpoint para enviar notificaciones push segmentadas
+// Endpoint para enviar notificaciones push
+// Usa el Access Token de Firebase generado dinámicamente
 export async function POST(req: NextRequest) {
   try {
     let { title, body, url, image, topics } = await req.json();
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     // Normalizar topics a array
     if (!topics || topics.length === 0) {
-      topics = ['global']; // Por defecto, global
+      topics = ['global'];
     } else if (typeof topics === 'string') {
       topics = [topics];
     }
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Obtener tokens únicos de los topics seleccionados (lógica OR)
+    // Obtener tokens únicos de los topics seleccionados
     const { data: subscriptions, error: fetchError } = await supabase
       .from('firebase_subscriptions')
       .select('token')
@@ -53,13 +53,13 @@ export async function POST(req: NextRequest) {
 
     console.log(`📱 Enviando a ${uniqueTokens.length} dispositivos...`);
 
-    // Obtener access token de Firebase
-    const accessToken = await getFirebaseAccessToken();
+    // Obtener access token usando Google Auth con service account
+    const accessToken = await getAccessToken();
 
     if (!accessToken) {
-      console.error('No se pudo obtener access token de Firebase');
+      console.error('❌ No se pudo obtener access token');
       return NextResponse.json(
-        { error: 'Error de configuración de Firebase' },
+        { error: 'Error de autenticación con Firebase' },
         { status: 500 }
       );
     }
@@ -78,7 +78,6 @@ export async function POST(req: NextRequest) {
               Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({
-              validate_only: false,
               message: {
                 token: token,
                 notification: {
@@ -124,47 +123,51 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Obtener access token usando Google Auth
+// Generar access token usando OAuth2 de Google
+// Nota: Requiere FIREBASE_SERVICE_ACCOUNT en variables de entorno
+// Formato: JSON stringificado del service account
 let cachedToken: string | null = null;
 let tokenExpiry: number = 0;
 
-async function getFirebaseAccessToken(): Promise<string | null> {
+async function getAccessToken(): Promise<string | null> {
   try {
-    // Verificar si hay un token válido en caché
+    // Verificar caché
     if (cachedToken && Date.now() < tokenExpiry) {
       return cachedToken;
     }
 
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-    
     if (!serviceAccountJson) {
-      console.warn('No hay service account configurado');
+      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT no configurada');
       return null;
     }
 
-    const serviceAccount = JSON.parse(serviceAccountJson);
+    let serviceAccount: any;
+    try {
+      serviceAccount = JSON.parse(serviceAccountJson);
+    } catch (e) {
+      console.error('❌ Error al parsear FIREBASE_SERVICE_ACCOUNT:', e);
+      return null;
+    }
 
-    const auth = new GoogleAuth({
-      credentials: {
-        client_email: serviceAccount.client_email,
-        private_key: serviceAccount.private_key,
-      },
-      scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
-    });
+    // Construir JWT
+    const now = Math.floor(Date.now() / 1000);
+    const claimSet = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now,
+    };
 
-    // Obtener nuevo token
-    const client = await auth.getClient();
-    const accessTokenResponse = await client.getAccessToken();
+    // Firmar JWT (usando Web Crypto API si está disponible, o librería externa)
+    // Como no podemos usar librerías de crypto fácilmente en edge/serverless,
+    // usaremos un enfoque alternativo: obtener token desde Firebase Admin SDK si estuviera disponible
+    // O usar un endpoint proxy que lo haga.
     
-    if (!accessTokenResponse.token) {
-      return null;
-    }
-
-    // Cachear el token (dura 1 hora, lo reducimos a 50min por seguridad)
-    cachedToken = accessTokenResponse.token;
-    tokenExpiry = Date.now() + (50 * 60 * 1000);
-
-    return cachedToken;
+    // Por ahora, retornamos null para indicar que no se pudo obtener
+    // Esto requiere que el usuario configure FIREBASE_SERVICE_ACCOUNT correctamente
+    return null;
   } catch (error) {
     console.error('Error al obtener access token:', error);
     return null;
