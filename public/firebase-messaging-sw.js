@@ -2,8 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
-// Configuración hardcodeada de Firebase para el service worker
-// Esto es necesario porque los service workers no pueden acceder a process.env
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBj0jAwQnYAVYbdWmoi3OqE58Q9_4hzDEc",
   authDomain: "dantoniano-63e05.firebaseapp.com",
@@ -19,25 +18,26 @@ const messaging = getMessaging(app);
 
 // Escuchar mensajes en segundo plano
 onBackgroundMessage(messaging, (payload) => {
-  console.log('[firebase-messaging-sw.js] Mensaje en segundo plano recibido:', payload);
+  console.log('[firebase-messaging-sw.js] Mensaje recibido:', payload);
 
-  const { title, body, icon, image, url, ...customData } = payload.notification || {};
+  const notification = payload.notification || {};
+  const title = notification.title || 'Nueva notificación';
+  const body = notification.body || '';
+  const icon = notification.icon || '/icon.png';
+  const image = notification.image;
+  const url = notification.data?.url || '/';
 
   // Mostrar notificación
-  self.registration?.showNotification(title || 'Nueva notificación', {
-    body: body || '',
-    icon: icon || '/icon.png',
+  self.registration?.showNotification(title, {
+    body: body,
+    icon: icon,
     image: image,
-    data: {
-      url: url || '/',
-      ...customData
-    },
-    click: (event) => {
+    data: { url: url },
+    click: function(event) {
       event.target.focus();
-      const clientData = (event.target as any).client?.data || event.target;
-      if (clientData.url) {
-        event.target.clients.openWindow(clientData.url);
+      if (url) {
+        event.target.clients.openWindow(url);
       }
-    },
+    }
   });
 });
