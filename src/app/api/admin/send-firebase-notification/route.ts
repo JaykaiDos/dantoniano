@@ -134,17 +134,21 @@ async function getAccessToken(): Promise<string | null> {
       return cachedToken;
     }
 
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!serviceAccountJson) {
-      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT no configurada');
+    // Intentar con la variable Base64 (recomendado)
+    const serviceAccountB64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
+    
+    if (!serviceAccountB64) {
+      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_B64 no configurada');
       return null;
     }
 
+    // Decodificar Base64 a JSON
     let serviceAccount: any;
     try {
-      serviceAccount = JSON.parse(serviceAccountJson);
+      const jsonStr = Buffer.from(serviceAccountB64, 'base64').toString('utf-8');
+      serviceAccount = JSON.parse(jsonStr);
     } catch (e) {
-      console.error('❌ Error al parsear FIREBASE_SERVICE_ACCOUNT:', e);
+      console.error('❌ Error al decodificar FIREBASE_SERVICE_ACCOUNT_B64:', e);
       return null;
     }
 
