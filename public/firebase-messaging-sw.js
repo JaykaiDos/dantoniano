@@ -1,6 +1,8 @@
 /* eslint-disable no-restricted-globals */
-import { initializeApp } from 'firebase/app';
-import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
+
+// Cargar Firebase desde CDN (método clásico, sin ES6)
+importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging.js');
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -12,32 +14,53 @@ const firebaseConfig = {
   appId: "1:750254370850:web:44465c36d8250c6b2d9a7b",
 };
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+// Inicializar Firebase en el Service Worker
+firebase.initializeApp(firebaseConfig);
+
+// Obtener instancia de messaging
+const messaging = firebase.messaging();
 
 // Escuchar mensajes en segundo plano
-onBackgroundMessage(messaging, (payload) => {
-  console.log('[firebase-messaging-sw.js] Mensaje recibido:', payload);
+messaging.onBackgroundMessage(function(payload) {
+  console.log('[SW] Mensaje en background:', payload);
 
-  const notification = payload.notification || {};
-  const title = notification.title || 'Nueva notificación';
-  const body = notification.body || '';
-  const icon = notification.icon || '/icon.png';
-  const image = notification.image;
-  const url = notification.data?.url || '/';
+  const notificationTitle = payload.notification?.title || 'Nueva notificación';
+  const notificationOptions = {
+    body: payload.notification?.body || '',
+    icon: payload.notification?.icon || '/icon-192x192.png',
+    badge: '/badge-72x72.png',
+    image: payload.notification?.image,
+    data: {
+      url: payload.notification?.clickAction || '/',
+    },
+    tag: 'firebase-notif',
+    requireInteraction: false,
+  };
 
   // Mostrar notificación
-  self.registration?.showNotification(title, {
-    body: body,
-    icon: icon,
-    image: image,
-    data: { url: url },
-    click: function(event) {
-      event.target.focus();
-      if (url) {
-        event.target.clients.openWindow(url);
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Manejar clics en notificaciones
+self.addEventListener('notificationclick', function(event) {
+  console.log('[SW] Notificación clickeada');
+  event.notification.close();
+
+  const urlToOpen = event.notification.data.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // Buscar si ya existe una ventana abierta
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
       }
-    }
-  });
+      // Si no existe, abrir una nueva
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });
