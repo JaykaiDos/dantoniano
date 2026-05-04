@@ -50,10 +50,10 @@ async function sendPushNotification(
   try {
     const supabase = createAdminClient();
     
-    // 1. Obtener datos del anime (título, slug si existe)
+    // 1. Obtener datos del anime
     const { data: anime, error: animeError } = await supabase
       .from('animes')
-      .select('slug, title, cover_url')
+      .select('title, cover_url')
       .eq('id', anime_id)
       .single();
 
@@ -63,20 +63,16 @@ async function sendPushNotification(
     }
 
     const { title: animeTitle, cover_url } = anime;
-    const slug = anime.slug || anime_id; // Fallback a id si no hay slug
     const baseUrl = process.env.NEXTAUTH_URL || 'https://dantoniano.vercel.app';
-    const url = `${baseUrl}/animes/${slug}#${anime_id}`;
+    const url = `${baseUrl}/animes/${anime_id}#${anime_id}`;
 
-    // 2. Preparar notificación
+    // 2. Preparar notificación (solo global por ahora)
     const notificationData = {
       title: `¡Nuevo Capítulo de ${animeTitle}!`,
       body: `Episodio ${episode_number}: ${episodeTitle || `Capítulo ${episode_number}`}`,
       url: url,
       image: thumbnail_url || cover_url,
-      topics: [
-        'global', // Todos los suscriptos globalmente
-        `anime:${slug}` // Seguidores de este anime
-      ]
+      topics: ['global'] // Solo suscriptos globales
     };
 
     // 3. Enviar al endpoint de notificaciones
