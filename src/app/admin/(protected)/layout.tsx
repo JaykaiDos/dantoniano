@@ -12,7 +12,6 @@ const NAV_ITEMS = [
   { href: '/admin/temporadas', label: 'Temporadas', icon: '📅' },
   { href: '/admin/animes', label: 'Animes', icon: '🎌' },
   { href: '/admin/reacciones', label: 'Reacciones', icon: '▶️' },
-  { href: '/admin/notificaciones', label: 'Notificaciones', icon: '🔔' },
   { href: '/admin/procesador', label: 'Procesador', icon: '⚡' },
   { href: '/admin/perfil', label: 'Redes', icon: '👤' },
 ] as const;
