@@ -114,6 +114,7 @@ export function AnimeForm({ anime, seasons }: Props) {
             <option value="pendiente">🕐 Pendiente</option>
             <option value="completado">✅ Completado</option>
             <option value="dropeado">❌ Dropeado</option>
+            <option value="pausado">⏸️ En pausa</option>
           </select>
         </Field>
         <Field label="Puntaje (1-10)">

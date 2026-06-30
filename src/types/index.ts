@@ -26,7 +26,7 @@ export type Anime = {
   season?: Season;
   mal_id?: number;
   // Estado de la lista personal
-  personal_status: 'pendiente' | 'viendo' | 'completado' | 'dropeado' | null;
+  personal_status: 'pendiente' | 'viendo' | 'completado' | 'dropeado' | 'pausado' | null;
   personal_score?: number;   // 1-10
   personal_notes?: string;
   is_featured: boolean;

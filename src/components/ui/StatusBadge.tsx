@@ -16,7 +16,9 @@ export function StatusBadge({ status }: Props) {
     <span className={`vh-badge vh-badge--${
       status === 'pendiente'  ? 'pending'  :
       status === 'viendo'     ? 'playing'  :
-      status === 'completado' ? 'finished' : 'dropped'
+      status === 'completado' ? 'finished' :
+      status === 'dropeado'   ? 'dropped'  :
+      status === 'pausado'   ? 'paused'   : 'pending'
     }`}>
       <span aria-hidden="true">{config.emoji}</span>
       {config.label}

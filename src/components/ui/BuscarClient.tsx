@@ -105,6 +105,7 @@ export function BuscarClient({ animes, seasons }: Props) {
           <option value="pendiente">🕐 Pendiente</option>
           <option value="completado">✅ Completado</option>
           <option value="dropeado">❌ Dropeado</option>
+          <option value="pausado">⏸️ En pausa</option>
         </select>
 
         {/* Contador de resultados */}

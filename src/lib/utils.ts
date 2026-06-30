@@ -53,6 +53,7 @@ export const STATUS_CONFIG = {
   viendo:     { label: 'Viendo',      emoji: '▶️', className: 'vh-badge--playing'  },
   completado: { label: 'Completado',  emoji: '✅', className: 'vh-badge--finished' },
   dropeado:   { label: 'Dropeado',    emoji: '❌', className: 'vh-badge--dropped'  },
+  pausado:    { label: 'En pausa',   emoji: '⏸️', className: 'vh-badge--paused'   },
 } as const;
 
 /**
