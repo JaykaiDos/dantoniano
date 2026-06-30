@@ -759,6 +759,11 @@ body::before {
   background: var(--vh-accent-soft);
   color: var(--vh-accent) !important;
 }
+.admin-nav-link--active {
+  background: var(--vh-accent-soft);
+  color: var(--vh-accent) !important;
+  font-weight: 600;
+}
 
 /* ═══════════════════════════════════════════════════════════
    SOCIAL CARD
