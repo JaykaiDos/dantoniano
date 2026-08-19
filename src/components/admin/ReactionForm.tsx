@@ -190,7 +190,7 @@ export function ReactionForm({ reaction, animes }: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           <label style={labelStyle}>Episodio</label>
-          <input type="number" value={episode} onChange={e => setEpisode(e.target.value as any)} style={inputStyle} min={0} placeholder="1" />
+          <input type="number" value={episode} onChange={e => setEpisode(e.target.value ? Number(e.target.value) : '')} style={inputStyle} min={0} placeholder="1" />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           <label style={labelStyle}>Duración</label>
@@ -247,7 +247,7 @@ export function ReactionForm({ reaction, animes }: Props) {
             { label: '📼 Streamtape',  value: sourceStreamtape,  setter: setSourceStreamtape,  placeholder: 'https://streamtape.com/v/ABC123'   },
             { label: '🎞 Doodstream',  value: sourceDoodstream,  setter: setSourceDoodstream,  placeholder: 'https://doodstream.com/d/ABC123'   },
             { label: '⭐ Streamwish',  value: sourceStreamwish,  setter: setSourceStreamwish,  placeholder: 'https://seekstreaming.com/e/ABC123' },
-            { label: '🌙 Filemoon',    value: sourceFilemoon,    setter: setSourceFilemoon,    placeholder: 'https://filemoon.sx/e/ABC123'      },
+            { label: '🌙 Filemoon',    value: sourceFilemoon,    setter: setSourceFilemoon,    placeholder: 'https://bysejikuar.com/e/ABC123'   },
             { label: '🔺 VOE',         value: sourceVoe,         setter: setSourceVoe,         placeholder: 'https://voe.sx/e/ABC123'           },
           ].map(({ label, value, setter, placeholder }) => (
             <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>

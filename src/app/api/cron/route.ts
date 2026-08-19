@@ -139,10 +139,10 @@ async function checkFilemoon(filecode: string): Promise<{ done: boolean; url: st
         const infoData = JSON.parse(infoText);
         const fileInfo = infoData?.result?.[0] ?? infoData?.result;
         if (fileInfo?.canplay === 1 || fileInfo?.status === 200) {
-          return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+          return { done: true, url: `https://bysejikuar.com/e/${filecode}`, error: null };
         }
       } catch { /* ignore */ }
-      return { done: true, url: `https://filemoon.sx/e/${filecode}`, error: null };
+      return { done: true, url: `https://bysejikuar.com/e/${filecode}`, error: null };
     }
 
     const entry = result?.[0] ?? result;
@@ -152,7 +152,7 @@ async function checkFilemoon(filecode: string): Promise<{ done: boolean; url: st
     console.log(`Filemoon ${filecode} status: ${entryStatus}, filecode: ${entryFilecode}`);
 
     if (entryStatus === 'OK' || entryStatus === 200 || entryStatus === '200') {
-      return { done: true, url: `https://filemoon.sx/e/${entryFilecode}`, error: null };
+      return { done: true, url: `https://bysejikuar.com/e/${entryFilecode}`, error: null };
     }
     if (entryStatus === 'ERROR' || entryStatus === 4 || entryStatus === '4') {
       const errorMsg = entry?.error ?? 'Upload remoto fallido';

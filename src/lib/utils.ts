@@ -119,10 +119,10 @@ if (
 ) return trimmed;
 
   // ── Filemoon ──
-  const fmMatch = trimmed.match(/filemoon\.(?:sx|to|cc)\/e\/([^/?]+)/);
-  if (fmMatch) return `https://filemoon.sx/e/${fmMatch[1]}`;
-  const fmMatch2 = trimmed.match(/filemoon\.(?:sx|to|cc)\/(?:d\/)?([^/?]+)/);
-  if (fmMatch2) return `https://filemoon.sx/e/${fmMatch2[1]}`;
+  const fmMatch = trimmed.match(/(?:filemoon\.(?:sx|to|cc)|bysejikuar\.com)\/e\/([^/?]+)/);
+  if (fmMatch) return `https://bysejikuar.com/e/${fmMatch[1]}`;
+  const fmMatch2 = trimmed.match(/(?:filemoon\.(?:sx|to|cc)|bysejikuar\.com)\/(?:d\/)?([^/?]+)/);
+  if (fmMatch2) return `https://bysejikuar.com/e/${fmMatch2[1]}`;
 
   // ── VOE ──
   const voeMatch = trimmed.match(/voe\.sx\/(?:e\/)?([^/?]+)/);
@@ -151,7 +151,7 @@ export function getVideoProvider(url: string): string {
   if (url.includes('dood'))                                                return 'doodstream';
   if (url.includes('streamwish') || url.includes('seekstreaming') ||
       url.includes('seekplays'))                                           return 'streamwish';
-  if (url.includes('filemoon'))                                            return 'filemoon';
+  if (url.includes('filemoon') || url.includes('bysejikuar.com'))          return 'filemoon';
   if (url.includes('voe.sx'))                                              return 'voe';
   if (url.includes('mega.nz'))                                             return 'mega';
   return 'other';
