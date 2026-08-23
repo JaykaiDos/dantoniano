@@ -244,7 +244,7 @@ export function ReactionForm({ reaction, animes }: Props) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
           {[
             { label: '🎬 Okru',        value: sourceOkru,        setter: setSourceOkru,        placeholder: 'https://ok.ru/video/123456'        },
-            { label: '📼 Streamtape',  value: sourceStreamtape,  setter: setSourceStreamtape,  placeholder: 'https://streamtape.com/v/ABC123'   },
+            { label: '📼 Streamtape',  value: sourceStreamtape,  setter: setSourceStreamtape,  placeholder: 'https://streamtape.com/e/ABC123'   },
             { label: '🎞 Doodstream',  value: sourceDoodstream,  setter: setSourceDoodstream,  placeholder: 'https://doodstream.com/d/ABC123'   },
             { label: '⭐ Streamwish',  value: sourceStreamwish,  setter: setSourceStreamwish,  placeholder: 'https://seekstreaming.com/e/ABC123' },
             { label: '🌙 Filemoon',    value: sourceFilemoon,    setter: setSourceFilemoon,    placeholder: 'https://bysejikuar.com/e/ABC123'   },

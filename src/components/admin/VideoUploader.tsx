@@ -67,8 +67,8 @@ export function VideoUploader({ onSuccess }: Props) {
             const fileId   = response?.result?.id ?? response?.result?.url;
             if (fileId) {
               const finalUrl = fileId.startsWith('http')
-                ? fileId
-                : `https://streamtape.com/v/${fileId}`;
+                ? fileId.replace('/v/', '/e/')
+                : `https://streamtape.com/e/${fileId}`;
               setUrl(finalUrl);
               setProgress(100);
               setState('done');
