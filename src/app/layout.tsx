@@ -4,6 +4,7 @@
 import type { Metadata } from 'next';
 import { DM_Sans, Playfair_Display, Roboto_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
+import Script from 'next/script';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -64,11 +65,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Script inline para leer preferencia de tema ANTES del primer paint — evita flash */}
-        <script
-          suppressHydrationWarning
+        {/*
+          Script inline para leer preferencia de tema ANTES del primer paint — evita flash.
+          "Claro" ya no es un tema fijo: se resuelve a la estación activa según el mes
+          (misma convención que getSeasonByMonth en hooks/useTheme.ts):
+            Invierno -> Ene/Feb/Mar · Primavera -> Abr/May/Jun
+            Verano   -> Jul/Ago/Sep · Otoño     -> Oct/Nov/Dic
+          "Oscuro" (data-theme="dark") no cambia.
+        */}
+        <Script
+          id="vh-theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t===null&&d)){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('vh-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var isDark=t==='dark'||(t===null&&d);if(isDark){document.documentElement.setAttribute('data-theme','dark');}else{var m=new Date().getMonth();var s=m<=2?'winter':m<=5?'spring':m<=8?'summer':'autumn';document.documentElement.setAttribute('data-theme',s);}}catch(e){}})();`,
           }}
         />
       </head>

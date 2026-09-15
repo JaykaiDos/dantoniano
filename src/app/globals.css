@@ -156,6 +156,210 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
+   TEMPORADAS — modo "claro" dinámico según el mes
+   ─────────────────────────────────────────────────────────
+   Reemplazan al cyberpunk fijo de :root como identidad visual
+   del modo claro. Solo se redefinen colores/texturas (fondo,
+   texto, acento, bordes, sombras y el glow del header); el
+   resto de los tokens (radios, transiciones, badges, danger)
+   se heredan de :root sin cambios.
+
+   Convención de estaciones (no astronómica, propia del proyecto):
+     Invierno  -> Enero, Febrero, Marzo
+     Primavera -> Abril, Mayo, Junio
+     Verano    -> Julio, Agosto, Septiembre
+     Otoño     -> Octubre, Noviembre, Diciembre
+
+   Paletas tomadas de seasonsInvierno.css / seasonPrimavera.css /
+   seasonsVerano.css / seasons.css (Autor original: Jaykai2).
+   El modo oscuro (arriba) queda intacto.
+═══════════════════════════════════════════════════════════ */
+
+/* ── INVIERNO (Ene · Feb · Mar) — azul/violeta ── */
+[data-theme="winter"] {
+  font-family: 'Roboto Mono', monospace;
+
+  --vh-bg-base:        #0c1445;
+  --vh-bg-surface:     rgba(12, 20, 69, 0.92);
+  --vh-bg-elevated:    rgba(30, 42, 94, 0.7);
+  --vh-bg-card:        linear-gradient(135deg, rgba(12,20,69,0.9) 0%, rgba(30,42,94,0.7) 100%);
+  --vh-bg-overlay:     rgba(12, 20, 69, 0.97);
+
+  --vh-body-bg-color:  #0c1445;
+  --vh-body-gradient:
+    radial-gradient(circle at 25% 30%, #1e2a5e 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, #0c1445 0%, transparent 40%);
+
+  --vh-text-primary:   #e0f2fe;
+  --vh-text-secondary: #bae6fd;
+  --vh-text-muted:     #7dd3fc80;
+  --vh-text-on-accent: #0c1445;
+
+  --vh-accent:        #7dd3fc;
+  --vh-accent-hover:  #38bdf8;
+  --vh-accent-soft:   rgba(125, 211, 252, 0.15);
+  --vh-accent-2:      #a78bfa;
+  --vh-accent-2-soft: rgba(167, 139, 250, 0.15);
+
+  --vh-border:       rgba(125, 211, 252, 0.3);
+  --vh-border-focus: #7dd3fc;
+  --vh-border-hover: #7dd3fc;
+  --vh-border-card:  rgba(125, 211, 252, 0.4);
+
+  --vh-shadow-sm:           0 2px 8px  rgba(125, 211, 252, 0.15);
+  --vh-shadow-md:           0 4px 20px rgba(125, 211, 252, 0.20);
+  --vh-shadow-lg:           0 8px 40px rgba(125, 211, 252, 0.30);
+  --vh-shadow-accent:       0 0 20px   rgba(125, 211, 252, 0.50);
+  --vh-shadow-accent-hover: 0 0 30px   rgba(125, 211, 252, 0.70);
+  --vh-shadow-focus:        0 0 0 3px  rgba(125, 211, 252, 0.35);
+}
+[data-theme="winter"] .vh-header__accent {
+  animation: vh-glow-winter 2s ease-in-out infinite alternate;
+}
+@keyframes vh-glow-winter {
+  from { text-shadow: 0 0 10px #7dd3fc, 0 0 20px #7dd3fc, 0 0 30px #38bdf8; }
+  to   { text-shadow: 0 0 15px #7dd3fc, 0 0 30px #38bdf8, 0 0 45px #0ea5e9; }
+}
+
+/* ── PRIMAVERA (Abr · May · Jun) — rosa/violeta floral ── */
+[data-theme="spring"] {
+  font-family: 'Roboto Mono', monospace;
+
+  --vh-bg-base:        #1a0a2e;
+  --vh-bg-surface:     rgba(26, 10, 46, 0.92);
+  --vh-bg-elevated:    rgba(45, 27, 78, 0.7);
+  --vh-bg-card:        linear-gradient(135deg, rgba(26,10,46,0.9) 0%, rgba(45,27,78,0.7) 100%);
+  --vh-bg-overlay:     rgba(26, 10, 46, 0.97);
+
+  --vh-body-bg-color:  #1a0a2e;
+  --vh-body-gradient:
+    radial-gradient(circle at 25% 30%, #2d1b4e 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, #1a0a2e 0%, transparent 40%);
+
+  --vh-text-primary:   #f8b4d9;
+  --vh-text-secondary: #f9a8d4;
+  --vh-text-muted:     #ec489980;
+  --vh-text-on-accent: #1a0a2e;
+
+  --vh-accent:        #ec4899;
+  --vh-accent-hover:  #db2777;
+  --vh-accent-soft:   rgba(236, 72, 153, 0.15);
+  --vh-accent-2:      #c084fc;
+  --vh-accent-2-soft: rgba(192, 132, 252, 0.15);
+
+  --vh-border:       rgba(236, 72, 153, 0.3);
+  --vh-border-focus: #ec4899;
+  --vh-border-hover: #ec4899;
+  --vh-border-card:  rgba(236, 72, 153, 0.4);
+
+  --vh-shadow-sm:           0 2px 8px  rgba(236, 72, 153, 0.15);
+  --vh-shadow-md:           0 4px 20px rgba(236, 72, 153, 0.20);
+  --vh-shadow-lg:           0 8px 40px rgba(236, 72, 153, 0.30);
+  --vh-shadow-accent:       0 0 20px   rgba(236, 72, 153, 0.50);
+  --vh-shadow-accent-hover: 0 0 30px   rgba(236, 72, 153, 0.70);
+  --vh-shadow-focus:        0 0 0 3px  rgba(236, 72, 153, 0.35);
+}
+[data-theme="spring"] .vh-header__accent {
+  animation: vh-glow-spring 2s ease-in-out infinite alternate;
+}
+@keyframes vh-glow-spring {
+  from { text-shadow: 0 0 10px #ec4899, 0 0 20px #ec4899, 0 0 30px #db2777; }
+  to   { text-shadow: 0 0 15px #ec4899, 0 0 30px #db2777, 0 0 45px #be185d; }
+}
+
+/* ── VERANO (Jul · Ago · Sep) — verde/dorado matrix ── */
+[data-theme="summer"] {
+  font-family: 'Roboto Mono', monospace;
+
+  --vh-bg-base:        #0a0e27;
+  --vh-bg-surface:     rgba(10, 14, 39, 0.92);
+  --vh-bg-elevated:    rgba(26, 40, 71, 0.7);
+  --vh-bg-card:        linear-gradient(135deg, rgba(10,14,39,0.9) 0%, rgba(26,40,71,0.7) 100%);
+  --vh-bg-overlay:     rgba(10, 14, 39, 0.97);
+
+  --vh-body-bg-color:  #0a0e27;
+  --vh-body-gradient:
+    radial-gradient(circle at 25% 30%, #1a2847 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, #0a0e27 0%, transparent 40%);
+
+  --vh-text-primary:   #a7f3d0;
+  --vh-text-secondary: #6ee7b7;
+  --vh-text-muted:     #10b98180;
+  --vh-text-on-accent: #0a0e27;
+
+  --vh-accent:        #10b981;
+  --vh-accent-hover:  #059669;
+  --vh-accent-soft:   rgba(16, 185, 129, 0.15);
+  --vh-accent-2:      #fbbf24;
+  --vh-accent-2-soft: rgba(251, 191, 36, 0.15);
+
+  --vh-border:       rgba(16, 185, 129, 0.3);
+  --vh-border-focus: #10b981;
+  --vh-border-hover: #10b981;
+  --vh-border-card:  rgba(16, 185, 129, 0.4);
+
+  --vh-shadow-sm:           0 2px 8px  rgba(16, 185, 129, 0.15);
+  --vh-shadow-md:           0 4px 20px rgba(16, 185, 129, 0.20);
+  --vh-shadow-lg:           0 8px 40px rgba(16, 185, 129, 0.30);
+  --vh-shadow-accent:       0 0 20px   rgba(16, 185, 129, 0.50);
+  --vh-shadow-accent-hover: 0 0 30px   rgba(16, 185, 129, 0.70);
+  --vh-shadow-focus:        0 0 0 3px  rgba(16, 185, 129, 0.35);
+}
+[data-theme="summer"] .vh-header__accent {
+  animation: vh-glow-summer 2s ease-in-out infinite alternate;
+}
+@keyframes vh-glow-summer {
+  from { text-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 30px #059669; }
+  to   { text-shadow: 0 0 15px #10b981, 0 0 30px #059669, 0 0 45px #047857; }
+}
+
+/* ── OTOÑO (Oct · Nov · Dic) — naranja/ámbar ── */
+[data-theme="autumn"] {
+  font-family: 'Roboto Mono', monospace;
+
+  --vh-bg-base:        #1a0f0a;
+  --vh-bg-surface:     rgba(26, 15, 10, 0.92);
+  --vh-bg-elevated:    rgba(61, 31, 15, 0.7);
+  --vh-bg-card:        linear-gradient(135deg, rgba(26,15,10,0.9) 0%, rgba(61,31,15,0.7) 100%);
+  --vh-bg-overlay:     rgba(26, 15, 10, 0.97);
+
+  --vh-body-bg-color:  #1a0f0a;
+  --vh-body-gradient:
+    radial-gradient(circle at 25% 30%, #3d1f0f 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, #1a0f0a 0%, transparent 40%);
+
+  --vh-text-primary:   #ffb380;
+  --vh-text-secondary: #ffd4a3;
+  --vh-text-muted:     #ff8c4280;
+  --vh-text-on-accent: #1a0f0a;
+
+  --vh-accent:        #ff8c42;
+  --vh-accent-hover:  #ff6b35;
+  --vh-accent-soft:   rgba(255, 140, 66, 0.15);
+  --vh-accent-2:      #ffab40;
+  --vh-accent-2-soft: rgba(255, 171, 64, 0.15);
+
+  --vh-border:       rgba(255, 140, 66, 0.3);
+  --vh-border-focus: #ff8c42;
+  --vh-border-hover: #ff8c42;
+  --vh-border-card:  rgba(255, 140, 66, 0.4);
+
+  --vh-shadow-sm:           0 2px 8px  rgba(255, 140, 66, 0.15);
+  --vh-shadow-md:           0 4px 20px rgba(255, 140, 66, 0.20);
+  --vh-shadow-lg:           0 8px 40px rgba(255, 140, 66, 0.30);
+  --vh-shadow-accent:       0 0 20px   rgba(255, 140, 66, 0.50);
+  --vh-shadow-accent-hover: 0 0 30px   rgba(255, 140, 66, 0.70);
+  --vh-shadow-focus:        0 0 0 3px  rgba(255, 140, 66, 0.35);
+}
+[data-theme="autumn"] .vh-header__accent {
+  animation: vh-glow-autumn 2s ease-in-out infinite alternate;
+}
+@keyframes vh-glow-autumn {
+  from { text-shadow: 0 0 10px #ff8c42, 0 0 20px #ff8c42, 0 0 30px #ff6b35; }
+  to   { text-shadow: 0 0 15px #ff8c42, 0 0 30px #ff6b35, 0 0 45px #d84315; }
+}
+
+/* ═══════════════════════════════════════════════════════════
    BASE
 ═══════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -569,7 +773,7 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vh-card, .vh-toast, .vh-header__logo { animation: none; }
+  .vh-card, .vh-toast, .vh-header__logo, .vh-header__accent { animation: none; }
   .vh-card:hover { transform: none; }
 }
 
