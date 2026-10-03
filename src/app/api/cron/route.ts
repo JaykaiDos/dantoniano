@@ -1,10 +1,4 @@
 /**
- * GET /api/cron
- * Endpoint llamado por cron-job.org cada 2 minutos.
- * Verifica el estado de cada tarea en procesamiento y actualiza la DB.
- * Cuando al menos una plataforma tiene URL y el resto terminó (done/error),
- * vincula la reacción automáticamente.
- *
  * Robustez:
  * - done+url=null se marca como error (no como done)
  * - check_count y MAX_CHECKS evitan que tareas se queden en processing infinitamente

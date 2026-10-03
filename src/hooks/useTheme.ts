@@ -1,15 +1,5 @@
 /**
  * Hook para controlar el tema claro/oscuro.
- *
- * El toggle sigue siendo binario (claro / oscuro), pero "claro" ya no es
- * un tema fijo: se resuelve a la estación activa según el mes (ver
- * getSeasonByMonth) y esa estación es la que se escribe en el atributo
- * data-theme del <html> (winter | spring | summer | autumn).
- *
- * El modo oscuro (data-theme="dark") no cambia: sigue siendo un valor fijo.
- *
- * Lee y escribe en localStorage + modifica data-theme en <html>.
- * Evita hydration mismatch inicializando desde el DOM antes del render.
  */
 'use client';
 
@@ -83,13 +73,10 @@ export function useTheme() {
   };
 
   return {
-    // Mantiene la forma anterior del hook (compatibilidad con el resto de la app).
     theme: mode,
     isDark: mode === 'dark',
     toggle,
     mounted,
-    // Nuevo: la estación activa, disponible por si algún componente
-    // quiere mostrarla (ej. un badge "❄️ Invierno").
     season,
   };
 }

@@ -1,6 +1,5 @@
 /**
  * Página de login del panel admin.
- * Formulario con las clases vh-* del design system.
  */
 'use client';
 
