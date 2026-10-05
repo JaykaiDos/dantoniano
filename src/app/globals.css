@@ -225,21 +225,21 @@
 [data-theme="spring"] {
   font-family: 'Roboto Mono', monospace;
 
-  --vh-bg-base:        #1a0a2e;
-  --vh-bg-surface:     rgba(26, 10, 46, 0.92);
-  --vh-bg-elevated:    rgba(45, 27, 78, 0.7);
-  --vh-bg-card:        linear-gradient(135deg, rgba(26,10,46,0.9) 0%, rgba(45,27,78,0.7) 100%);
-  --vh-bg-overlay:     rgba(26, 10, 46, 0.97);
+  --vh-bg-base:        #10061b;
+  --vh-bg-surface:     rgba(16, 6, 27, 0.92);
+  --vh-bg-elevated:    rgba(27, 16, 47, 0.7);
+  --vh-bg-card:        linear-gradient(135deg, rgba(16,6,27,0.9) 0%, rgba(27,16,47,0.7) 100%);
+  --vh-bg-overlay:     rgba(16, 6, 27, 0.97);
 
-  --vh-body-bg-color:  #1a0a2e;
+  --vh-body-bg-color:  #10061b;
   --vh-body-gradient:
-    radial-gradient(circle at 25% 30%, #2d1b4e 0%, transparent 40%),
-    radial-gradient(circle at 75% 70%, #1a0a2e 0%, transparent 40%);
+    radial-gradient(circle at 25% 30%, #1b102e 0%, transparent 40%),
+    radial-gradient(circle at 75% 70%, #10061b 0%, transparent 40%);
 
   --vh-text-primary:   #f8b4d9;
   --vh-text-secondary: #f9a8d4;
   --vh-text-muted:     #ec489980;
-  --vh-text-on-accent: #1a0a2e;
+  --vh-text-on-accent: #10061b;
 
   --vh-accent:        #ec4899;
   --vh-accent-hover:  #db2777;
